@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matplotlib Graph in Flask</title>
+    <style>
+        /* Set the desired width and height for the image */
+        .matplotlib-image {
+            width: 400px; /* You can adjust the width as per your requirement */
+            height: auto; /* Setting 'auto' for height will maintain the aspect ratio */
+        }
+    </style>
+</head>
+<body>
+    <h1>Matplotlib Graph</h1>
+    <!-- Add the class 'matplotlib-image' to the image tag -->
+    <img src="data:image/png;base64,{{ plot_base64 }}" alt="Matplotlib Graph" class="matplotlib-image">
+</body>
+</html>

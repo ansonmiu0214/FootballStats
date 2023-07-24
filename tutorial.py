@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 sb.competitions()
 
-print(sb.matches(competition_id=43, season_id=106).head(50))
+(sb.matches(competition_id=43, season_id=106).head(50))
 
 MATCH_ID = 3869685
 match_event_df = sb.events(match_id=MATCH_ID)
@@ -15,8 +15,7 @@ match_event_df['id']
 match_360_df['event_uuid']
 df = pd.merge(left=match_event_df, right=match_360_df,
               left_on='id', right_on='event_uuid', how='left')
-# df.head(25)
-print(df.columns)
+df.head(25)
 MESSI = 5503
 df = df[(df['player_id'] == MESSI) & (
     df['type'] == 'Pass')].reset_index(drop=True)
@@ -27,17 +26,18 @@ df[['x_end', 'y_end']] = pd.DataFrame(
 p = Pitch(pitch_type='statsbomb')
 fig, ax = p.draw(figsize=(12, 8))
 
-df = df[0:1]
+df = df[:]
 p.scatter(x=df['x_start'], y=df['y_start'], ax=ax)
 p.lines(xstart=df['x_start'], ystart=df['y_start'],
         xend=df['x_end'], yend=df['y_end'], ax=ax, comet=True)
 
 for x in df.iloc[0]['freeze_frame']:
-    if x['teammate']:
-        color = 'blue'
-    else:
-        color = 'red'
+    for index, row in df.iterrows():
+        minute = row['minute']
+        x_mid = (row['x_start'] + row['x_end']) / 2
+        y_start = row['y_start']
+        ax.text(x_mid, y_start - 1.5,
+                f"{minute}'", ha='center', va='center', fontsize=10, color='black')
 
-    p.scatter(x=x['location'][0], y=x['location'][1], ax=ax, c=color, s=100)
 
 plt.show()
