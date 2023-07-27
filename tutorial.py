@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 sb.competitions()
 
-(sb.matches(competition_id=43, season_id=106).head(50))
+(sb.matches(competition_id=43, season_id=106))
 
 MATCH_ID = 3869685
 match_event_df = sb.events(match_id=MATCH_ID)
@@ -15,7 +15,7 @@ match_event_df['id']
 match_360_df['event_uuid']
 df = pd.merge(left=match_event_df, right=match_360_df,
               left_on='id', right_on='event_uuid', how='left')
-df.head(25)
+print(df.head(25))
 MESSI = 5503
 df = df[(df['player_id'] == MESSI) & (
     df['type'] == 'Pass')].reset_index(drop=True)
