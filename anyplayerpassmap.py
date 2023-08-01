@@ -26,6 +26,7 @@ def find_match_id(home_team, away_team):
 def find_player_id(df, player_name):
     player_info_df = df[['player_id', 'player']
                         ].drop_duplicates().reset_index(drop=True)
+    # print(player_info_df)  # Used to see all the players
     player_df = match_event_df[match_event_df['player'] == player_name]
     player_id = player_df['player_id'].values[0]
     print(player_id)
@@ -34,9 +35,12 @@ def find_player_id(df, player_name):
 
 
 sb.competitions()
-sb.matches(competition_id=43, season_id=106)
-home = "Portugal"  # Change later to input
-away = "Ghana"  # Change later to input
+(sb.matches(competition_id=11, season_id=4))
+
+home = input("Home Team:")
+away = input("Away Team:")
+# home = "Portugal"  # Change later to input
+# away = "Ghana"  # Change later to input
 MATCH_ID = find_match_id(home, away)
 print(MATCH_ID)
 
@@ -49,7 +53,14 @@ match_360_df['event_uuid']
 df = pd.merge(left=match_event_df, right=match_360_df,
               left_on='id', right_on='event_uuid', how='left')
 
-player_name = "Cristiano Ronaldo dos Santos Aveiro"
+
+# Showing the name temp
+player_info_df = df[['player_id', 'player']
+                    ].drop_duplicates().reset_index(drop=True)
+print(player_info_df)
+
+
+player_name = input("Enter a player name:")
 PLAYER_ID = find_player_id(df, player_name)
 print(PLAYER_ID)
 (df.head(25))
