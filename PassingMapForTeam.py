@@ -30,13 +30,14 @@ for x in range(2):
         player_id = match_event_df['tactics'][x]['lineup'][y]['player']['id']
         starter_id.append(player_id)
 
-
+# Seperates locations[x,y] and pass_end_location[x,y] into x_start,y_start,x_end,y_end
 data1[['x_start', 'y_start']] = pd.DataFrame(
     data1.location.tolist(), index=data1.index)
 data1[['x_end', 'y_end']] = pd.DataFrame(
     data1.pass_end_location.tolist(), index=data1.index)
 passing = data1[data1['player_id'].isin(starter_id)][['player', 'player_id', 'team', 'pass_recipient',
                                                       'x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
+# Variable will be used
 passing = passing[passing['team'] == "France"]
 passing['pass_outcome'].fillna("Complete", inplace=True)
 passing = passing[passing['pass_outcome'] == 'Complete']
@@ -52,7 +53,8 @@ pass_between = pass_between.merge(
 pass_between = pass_between.merge(
     average_location, left_on='pass_recipient', right_index=True)
 pass_between = pass_between[pass_between['pass_count'] > 3]
-print(pass_between)
+
+
 p = VerticalPitch(pitch_color='grass', line_color='white', pitch_type='statsbomb',
                   stripe=True)
 fig, ax = p.draw(figsize=(12, 8))

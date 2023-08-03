@@ -12,7 +12,9 @@ match_event_df = sb.events(match_id=MATCH_ID)
 match_360_df = pd.read_json(
     r'C:\Users\amete\OneDrive\Documents\GitHub\open-data\data\three-sixty\{}.json'.format(MATCH_ID))
 match_event_df['id']
+print(match_event_df.columns)
 match_360_df['event_uuid']
+print(match_event_df.columns)
 df = pd.merge(left=match_event_df, right=match_360_df,
               left_on='id', right_on='event_uuid', how='left')
 print(df.head(25))
