@@ -16,3 +16,10 @@ class User(db.Model,UserMixin):
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.favourite_team}')"
+
+class Countries(db.Model):
+    Name = db.Column(db.String(120), primary_key=True)
+    Flag = db.Column(db.String(1000))
+
+    def __repre__(self):
+        return f"Countries('{self.Name}','{self.Flag}')"
