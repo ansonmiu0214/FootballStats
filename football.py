@@ -27,9 +27,7 @@ conn.request("GET", f"/teams?league={league_id}&season=2023", headers=headers)
 res = conn.getresponse()
 data = res.read()
 data = json.loads(data.decode('utf-8'))
-# Step 1: Open and read the JSON file
 
-# Extract league information from the response
 for x in range(len(data['response'])):
     teamid = data['response'][x]["team"]["id"]
     team_name = data["response"][x]["team"]["name"]
