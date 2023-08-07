@@ -17,5 +17,3 @@ function checkDatabaseConnection() {
   });
 }
 
-// Call the function to check the database connection
-checkDatabaseConnection();

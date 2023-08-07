@@ -1,2 +1,5 @@
-After Selecting a Favourite team
-The home page will have information about the team selected
+
+1. Store the name of the league that the user has clicked on
+2. Look for the league ID and store it
+3. using the league id now query the api and store it in the database
+4. display all the teams that fit it

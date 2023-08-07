@@ -8,24 +8,29 @@
   <div id="countryListContainer">
     <input type="text" id="searchBar" onkeyup="filterCountries()" placeholder="Search for countries...">
     <ul id="countryList">
-      <li><button onclick="showCountryName(this)">Albania</button></li>
-      <li><button onclick="showCountryName(this)">Argentina</button></li>
-      <li><button onclick="showCountryName(this)">Australia</button></li>
-    <!-- Add more countries here -->
-  </ul>
+      <!-- The buttons will be dynamically created here -->
+    </ul>
+  </div>
+
+  <!-- Add a button outside the div to add new buttons -->
+  <button onclick="addNewButtons()">Add New Buttons</button>
+  <!-- Add an "Undo" button to revert the changes -->
+  <button onclick="undoActions()">Undo</button>
 
   <script>
+    let originalState;
+
     function filterCountries() {
       // Get input value from the search bar
       const input = document.getElementById("searchBar").value.toLowerCase();
-      
+
       // Get the list of all countries
       const countries = document.querySelectorAll("#countryList li");
-      
+
       // Loop through each country in the list
       countries.forEach(country => {
         const countryName = country.textContent.toLowerCase();
-        
+
         // If the country name contains the input value, display it, otherwise hide it
         if (countryName.includes(input)) {
           country.style.display = "block";
@@ -38,6 +43,61 @@
     function showCountryName(button) {
       const countryName = button.textContent;
       alert(countryName);
+    }
+
+    // Function to replace the buttons with "France," "England," and "Ghana"
+    function replaceButtons() {
+      const countryList = document.getElementById("countryList");
+
+      // Remove existing buttons
+      while (countryList.firstChild) {
+        countryList.removeChild(countryList.firstChild);
+      }
+
+      // Add new buttons
+      const countries = ["France", "England", "Ghana"];
+      countries.forEach(country => {
+        const li = document.createElement("li");
+        const button = document.createElement("button");
+        button.textContent = country;
+        button.onclick = function() {
+          showCountryName(this);
+        };
+        li.appendChild(button);
+        countryList.appendChild(li);
+      });
+
+      // Store the original state for undo
+      originalState = countryList.innerHTML;
+    }
+
+    // Call the function to replace the buttons on page load
+    replaceButtons();
+
+    // Function to add new buttons when clicking a button outside the div
+    function addNewButtons() {
+      const countryList = document.getElementById("countryList");
+      const countriesToAdd = ["Mexico", "Brazil", "Spain"];
+
+      countriesToAdd.forEach(country => {
+        const li = document.createElement("li");
+        const button = document.createElement("button");
+        button.textContent = country;
+        button.onclick = function() {
+          showCountryName(this);
+        };
+        li.appendChild(button);
+        countryList.appendChild(li);
+      });
+
+      // Update the filtered display with the new buttons
+      filterCountries();
+    }
+
+    // Function to undo the actions and revert to the original state
+    function undoActions() {
+      const countryList = document.getElementById("countryList");
+      countryList.innerHTML = originalState;
     }
   </script>
 </body>
