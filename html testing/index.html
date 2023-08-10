@@ -1,104 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Country Search</title>
-  <link rel="stylesheet" type="text/css" href="style.css">
+    <title>Button Container</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #ccc; /* Adding a border around the container */
+        }
+        .button {
+            width: calc(100% / 15 - 20px); /* Calculate button width for 15 buttons per row */
+            height: 80px; /* Increase the button height */
+            margin: 5px; /* Reduce the margin between buttons */
+            background-color: #3498db;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-  <div id="countryListContainer">
-    <input type="text" id="searchBar" onkeyup="filterCountries()" placeholder="Search for countries...">
-    <ul id="countryList">
-      <!-- The buttons will be dynamically created here -->
-    </ul>
-  </div>
-
-  <!-- Add a button outside the div to add new buttons -->
-  <button onclick="addNewButtons()">Add New Buttons</button>
-  <!-- Add an "Undo" button to revert the changes -->
-  <button onclick="undoActions()">Undo</button>
-
-  <script>
-    let originalState;
-
-    function filterCountries() {
-      // Get input value from the search bar
-      const input = document.getElementById("searchBar").value.toLowerCase();
-
-      // Get the list of all countries
-      const countries = document.querySelectorAll("#countryList li");
-
-      // Loop through each country in the list
-      countries.forEach(country => {
-        const countryName = country.textContent.toLowerCase();
-
-        // If the country name contains the input value, display it, otherwise hide it
-        if (countryName.includes(input)) {
-          country.style.display = "block";
-        } else {
-          country.style.display = "none";
-        }
-      });
-    }
-
-    function showCountryName(button) {
-      const countryName = button.textContent;
-      alert(countryName);
-    }
-
-    // Function to replace the buttons with "France," "England," and "Ghana"
-    function replaceButtons() {
-      const countryList = document.getElementById("countryList");
-
-      // Remove existing buttons
-      while (countryList.firstChild) {
-        countryList.removeChild(countryList.firstChild);
-      }
-
-      // Add new buttons
-      const countries = ["France", "England", "Ghana"];
-      countries.forEach(country => {
-        const li = document.createElement("li");
-        const button = document.createElement("button");
-        button.textContent = country;
-        button.onclick = function() {
-          showCountryName(this);
-        };
-        li.appendChild(button);
-        countryList.appendChild(li);
-      });
-
-      // Store the original state for undo
-      originalState = countryList.innerHTML;
-    }
-
-    // Call the function to replace the buttons on page load
-    replaceButtons();
-
-    // Function to add new buttons when clicking a button outside the div
-    function addNewButtons() {
-      const countryList = document.getElementById("countryList");
-      const countriesToAdd = ["Mexico", "Brazil", "Spain"];
-
-      countriesToAdd.forEach(country => {
-        const li = document.createElement("li");
-        const button = document.createElement("button");
-        button.textContent = country;
-        button.onclick = function() {
-          showCountryName(this);
-        };
-        li.appendChild(button);
-        countryList.appendChild(li);
-      });
-
-      // Update the filtered display with the new buttons
-      filterCountries();
-    }
-
-    // Function to undo the actions and revert to the original state
-    function undoActions() {
-      const countryList = document.getElementById("countryList");
-      countryList.innerHTML = originalState;
-    }
-  </script>
+    <div class="container">
+        <!-- Add 15 buttons -->
+        <div class="button">Button 1</div>
+        <div class="button">Button 2</div>
+        <div class="button">Button 3</div>
+        <div class="button">Button 4</div>
+        <div class="button">Button 5</div>
+        <div class="button">Button 6</div>
+        <div class="button">Button 7</div>
+        <div class="button">Button 8</div>
+        <div class="button">Button 9</div>
+        <div class="button">Button 10</div>
+        <div class="button">Button 11</div>
+        <div class="button">Button 12</div>
+        <div class="button">Button 13</div>
+        <div class="button">Button 14</div>
+        <div class="button">Button 15</div>
+        <!-- Add more buttons here as needed -->
+    </div>
 </body>
 </html>

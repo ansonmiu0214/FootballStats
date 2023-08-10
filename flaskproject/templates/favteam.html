@@ -8,12 +8,14 @@
         <li>
             <button onclick="showCountryName(this)"><img src="{{ row.flag_url }}" alt="Icon" style="width: 50px; height: 50px;" />{{row.name}}</button>
         </li>
-      {% endfor %}        
-    <!-- Add more countries here -->
+      {% endfor %}       
   </ul>
   <script>
     let lastClickedButtonCountry = '';
-
+    function redirectToHome() {
+            window.location.href = "{{ url_for('home')}}";
+        }
+    
     function filterCountries() {
       // Get input value from the search bar
       const input = document.getElementById("searchBar").value.toLowerCase();
@@ -51,6 +53,8 @@
       .then(data => {
         //starts here
         console.log(data);
+        replaceButtons();
+        addNewButtonsClubs(data);
 
       })
     }
@@ -77,7 +81,7 @@
           console.log('Comp Name: ' + comp.comp_name + '\nFlag URL: ' + comp.logo_url);
       });
       replaceButtons();
-      addNewButtons(data);
+      addNewButtonsLeague(data);
       
     })
     .catch(error => {
@@ -97,7 +101,7 @@
     }
     
     // Function to add new buttons when clicking a button outside the div
-    function addNewButtons(leagues) {
+    function addNewButtonsLeague(leagues) {
       const countryList = document.getElementById("countryList");
       console.log(leagues)
 
@@ -122,6 +126,53 @@
 
       // Update the filtered display with the new buttons
       filterCountries();
+    }
+
+    function addNewButtonsClubs(clubs){
+      const countryList = document.getElementById("countryList");
+      console.log(clubs)
+
+      clubs.forEach(club => {
+        const li = document.createElement("li");  
+        const button = document.createElement("button");
+        button.textContent = club.team_name;
+        button.onclick = function() {
+          StoreSelectedTeam(this);
+        };
+        const image = document.createElement("img");
+        const imageUrl = club.team_badge;
+        image.src = imageUrl;
+        image.style.width = "50px";
+        image.style.height = "50px";
+        image.style.marginRight = "10px";
+
+        li.appendChild(button);
+        button.appendChild(image);
+        countryList.appendChild(li);
+      });
+      filterCountries();
+    }
+    function StoreSelectedTeam(team)
+    {
+      console.log("FINALLY");
+      const teamName = team.textContent;
+
+      fetch('/store_favteam', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ teamName: teamName })
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Handle the response from the server if needed
+      console.log(data);
+      redirectToHome();
+      
+      
+    })
+
     }
     // Store the original state for undo
     let originalState;

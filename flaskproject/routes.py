@@ -1,14 +1,16 @@
 from flask import render_template, url_for, flash, redirect, request, jsonify
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
-from flaskproject.models import User, Countries, Competitions, Teams
+from flaskproject.models import User, Countries, Competitions, Teams, Comps
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import text
 import http.client
 import json
 import sqlite3
+from statsbombpy import sb
+import pandas as pd
 
-conn = http.client.HTTPSConnection("v3.football.api-sports.io")
+connt = http.client.HTTPSConnection("v3.football.api-sports.io")
 
 @app.route("/")
 @app.route("/home")
@@ -34,7 +36,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         flash('Your Account has been created! You are now able to log in', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('favteam'))
     return render_template('register.html', title='Register', form=form)
 
 
@@ -67,9 +69,9 @@ def account():
 
 
 @app.route("/favteam")
+@login_required
 def favteam():
-    sql_query = text("SELECT * FROM countries;")
-    data = db.session.execute(sql_query)
+    data = Countries.query.all()
     return render_template('favteam.html',data=data)
 
 @app.route('/query_country', methods=['POST'])
@@ -105,28 +107,14 @@ def query_teams():
         results = [{'teamid': t.teamid, 'team_badge': t.team_logo_url, 'comp_id': t.compid, 'team_name': t.team_name} for t in team]
         return jsonify(results)
     else:
-        #Inserting into the database
-        #Function that inserts the data
-        def insert_league_data(teamid,team_name,country,team_logo_url,stadium_id,stadium_name,stadium_capacity,stadium_image,leagueid):
-            conn = sqlite3.connect("./instance/footballDB.db")
-            cursor = conn.cursor()
-    
-            cursor.execute('''
-                INSERT INTO teams(teamid, team_name,country,team_logo_url,stadium_id,stadium_name,stadium_capacity,stadium_image,compid)
-                    VALUES (?,?,?,?,?,?,?,?,?)
-                ''', (teamid,team_name,country,team_logo_url,stadium_id,stadium_name,stadium_capacity,stadium_image,leagueid))
-    
-            conn.commit()
-            conn.close()
-
         payload = {}
         headers = {
         'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
         'x-rapidapi-host': 'v3.football.api-sports.io',
         'season': 2023
         }
-        conn.request("GET", f"/teams?league={leagueid}&season=2023", headers=headers)
-        res = conn.getresponse()
+        connt.request("GET", f"/teams?league={leagueid}&season=2023", headers=headers)
+        res = connt.getresponse()
         data = res.read()
         data = json.loads(data.decode('utf-8'))
         for x in range(len(data['response'])):
@@ -138,8 +126,88 @@ def query_teams():
             stadium_name = data['response'][x]['venue']['name']
             stadium_capacity = data['response'][x]['venue']['capacity']
             stadium_image = data['response'][x]['venue']['image']
-            insert_league_data(teamid,team_name,country,team_logo_url,stadium_id,stadium_name,stadium_capacity,stadium_image,leagueid)
+            team = Teams(teamid=teamid,team_name=team_name,country=country,team_logo_url=team_logo_url,stadium_id=stadium_id,stadium_name=stadium_name,stadium_capacity=stadium_capacity,stadium_image=stadium_image,compid=leagueid)
+            db.session.add(team)
+            db.session.commit()
         team = Teams.query.filter_by(compid=leagueid).all()
         results = [{'teamid': t.teamid, 'team_badge': t.team_logo_url, 'comp_id': t.compid, 'team_name': t.team_name} for t in team]
         return jsonify(results)
 
+
+@app.route('/store_favteam', methods=['POST'])
+def store_favteam():
+    data = request.get_json()
+    team_name = data['teamName']
+    print(team_name)
+    current_user.favourite_team = team_name
+    db.session.commit()
+    flash(f'{team_name} was selected as your Favourite Team!', 'success')
+    return jsonify({})
+    
+#Fetches the competitions that I can use to show the data models
+@app.route('/stats')
+def stats():
+    comps = sb.competitions()
+    comp_season_data = []
+    for index, row in comps.iterrows():
+        comp_season_data.append((row['competition_name'], row['season_name']))
+    
+    return render_template('stats.html',data=comp_season_data)
+
+@app.route('/get_comp_id&seasonid', methods=['POST'])
+def get_comp_id_seasonid():
+    data = request.get_json()
+    compName = data['compName']
+    compYear = data['compYear']
+    match = Comps.query.filter_by(competition_name=compName,season_name=compYear).first()
+    results = [{'compId': match.competition_id,'seasonId': match.season_id} ]
+    return jsonify(results)
+
+
+@app.route('/get_selected_comp', methods=['POST'])
+def get_selected_comp():
+    conn = db.engine.connect()
+    print('starting')
+    data = request.get_json()
+    compId = data['compId']
+    seasonId = data['seasonId']
+    #matches = Comps.query.filter_by(competition_id=compId,season_id=seasonId)
+    query = f'SELECT * FROM matches WHERE compId={compId} AND seasonId ={seasonId}'
+    df = pd.read_sql_query(query,conn)
+    if df.empty:
+        print("Starting")
+        matches = (sb.matches(competition_id=compId, season_id=seasonId))
+        matches = matches.assign(compId=compId, seasonId=seasonId)
+        matches.to_sql('matches', conn, if_exists='append', index=False)
+        query = f'SELECT * FROM matches WHERE compId={compId} AND seasonId ={seasonId}'
+        df = pd.read_sql_query(query,conn)
+
+    else:
+        pass
+    conn.commit()
+    conn.close()
+    matches_json = df.to_json(orient='records')
+    matches_json = json.loads(matches_json)
+    return jsonify(matches_json)
+
+@app.route('/get_match_stats',methods=['POST'])
+def get_match_stats():
+    conn = db.engine.connect()
+    data = request.get_json()
+    MATCH_ID = data['match_id']
+    query = f'SELECT * FROM gamestats WHERE match_id={MATCH_ID}'
+    df = pd.read_sql_query(query,conn)
+    if df.empty:
+        print("Starting")
+        matches = (sb.events(match_id=MATCH_ID))
+        matches = matches.assign(match_id=MATCH_ID)
+        matches.to_sql('gamestats', conn, if_exists='append', index=False)
+        query = f'SELECT * FROM gamestats WHERE match_id={MATCH_ID}'
+        df = pd.read_sql_query(query,conn)
+
+    else:
+        pass
+    conn.commit()
+    conn.close()
+    print(df)
+    return jsonify({})

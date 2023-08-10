@@ -51,3 +51,21 @@ class Teams(db.Model):
 
     def __repr__(self):
         return f"Teams('{self.teamid}','{self.team_logo_url}','{self.stadium_id}','{self.country}','{self.stadium_name}','{self.stadium_capacity}','{self.stadium_image}','{self.compid}','{self.team_name}')"
+
+class Comps(db.Model):
+    competition_id = db.Column(db.Integer,primary_key=True)
+    season_id = db.Column(db.Integer)
+    country_name = db.Column(db.String)
+    competition_name = db.Column(db.String)
+    competition_gender = db.Column(db.String)
+    competition_youth = db.Column(db.String)
+    competition_international = db.Column(db.String)
+    season_name = db.Column(db.String)
+    match_updated_360 = db.Column(db.String)
+    match_available_360 = db.Column(db.String)
+    match_available = db.Column(db.String)
+
+
+    def __repr__(self):
+        return f"Comp('{self.competition_id}','{self.season_id}','{self.country_name}','{self.competition_name}','{self.competition_gender}','{self.competition_youth}','{self.competition_international}','{self.season_name}','{self.match_available_360}','{self.match_available}')"
+    

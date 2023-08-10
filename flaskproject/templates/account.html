@@ -4,4 +4,7 @@
     <h2 class="account-heading">{{ current_user.username}}</h2>
     <p class="text-secondary">{{ current_user.email }}</p>
    </div>
+   <div class='content'>
+      <a href="{{ url_for('favteam')}}">Change Favourite Team</a>
+   </div>
 {% endblock content %}
