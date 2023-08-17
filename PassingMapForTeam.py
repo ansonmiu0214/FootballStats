@@ -4,20 +4,8 @@ from mplsoccer import Pitch, VerticalPitch
 import matplotlib.pyplot as plt
 
 
-def tocsv(name, df):
-    csv_file_name = f"{name}.csv"
-    df.to_csv(csv_file_name)
 
-    print(f"Data exported to '{csv_file_name}' successfully.")
-
-
-sb.competitions()
-
-(sb.matches(competition_id=43, season_id=106))
-
-MATCH_ID = 3869685
-PLAYER_ID = 5503
-match_event_df = sb.events(match_id=MATCH_ID)
+match_event_df = sb.events(match_id=3869685)
 
 data1 = (match_event_df)
 

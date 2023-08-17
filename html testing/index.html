@@ -1,55 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Button Container</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            border: 2px solid #ccc; /* Adding a border around the container */
-        }
-        .button {
-            width: calc(100% / 15 - 20px); /* Calculate button width for 15 buttons per row */
-            height: 80px; /* Increase the button height */
-            margin: 5px; /* Reduce the margin between buttons */
-            background-color: #3498db;
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
 </head>
 <body>
-    <div class="container">
-        <!-- Add 15 buttons -->
-        <div class="button">Button 1</div>
-        <div class="button">Button 2</div>
-        <div class="button">Button 3</div>
-        <div class="button">Button 4</div>
-        <div class="button">Button 5</div>
-        <div class="button">Button 6</div>
-        <div class="button">Button 7</div>
-        <div class="button">Button 8</div>
-        <div class="button">Button 9</div>
-        <div class="button">Button 10</div>
-        <div class="button">Button 11</div>
-        <div class="button">Button 12</div>
-        <div class="button">Button 13</div>
-        <div class="button">Button 14</div>
-        <div class="button">Button 15</div>
-        <!-- Add more buttons here as needed -->
-    </div>
+  <div id="map" style="width: 100%; height: 400px;"></div>
+  <script>
+    var geocoder;
+    var map;
+
+    function initMap() {
+      geocoder = new google.maps.Geocoder();
+      var locationAddress = "Waterloo Road Molineux Stadium"; // Replace with the address you want to display
+
+      geocoder.geocode({ 'address': locationAddress }, function(results, status) {
+        if (status === 'OK') {
+          var location = results[0].geometry.location;
+          map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: location,
+          });
+
+          var marker = new google.maps.Marker({
+            map: map,
+            position: location,
+            title: 'Location Title', // Replace with your desired title
+          });
+        } else {
+          alert('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-kusCvU_3IRob5HDn_J5QxwIcW0vhb6s&callback=initMap"></script>
 </body>
 </html>

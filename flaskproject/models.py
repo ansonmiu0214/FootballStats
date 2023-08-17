@@ -46,11 +46,12 @@ class Teams(db.Model):
     stadium_name = db.Column(db.String(300))
     stadium_capacity = db.Column(db.Integer)
     stadium_image = db.Column(db.String(300))
+    stadium_address = db.Column(db.String(300))
     compid = db.Column(db.Integer, db.ForeignKey('competitions.compid'))
     competition = db.relationship('Competitions', backref='teams', lazy=True)
 
     def __repr__(self):
-        return f"Teams('{self.teamid}','{self.team_logo_url}','{self.stadium_id}','{self.country}','{self.stadium_name}','{self.stadium_capacity}','{self.stadium_image}','{self.compid}','{self.team_name}')"
+        return f"Teams('{self.teamid}','{self.team_logo_url}','{self.stadium_id}','{self.country}','{self.stadium_name}','{self.stadium_capacity}','{self.stadium_image}','{self.stadium_address},'{self.compid}','{self.team_name}')"
 
 class Comps(db.Model):
     competition_id = db.Column(db.Integer,primary_key=True)
@@ -68,4 +69,12 @@ class Comps(db.Model):
 
     def __repr__(self):
         return f"Comp('{self.competition_id}','{self.season_id}','{self.country_name}','{self.competition_name}','{self.competition_gender}','{self.competition_youth}','{self.competition_international}','{self.season_name}','{self.match_available_360}','{self.match_available}')"
+    
+class TeamsLogo(db.Model):
+    teamid = db.Column(db.Integer,primary_key=True)
+    team_name = db.Column(db.String(300))
+    country = db.Column(db.String(300), db.ForeignKey('countries.name'))
+    team_logo_url = db.Column(db.String(300))
+    def __repr__(self):
+        return f"TeamsLogo('{self.teamid}','{self.team_logo_url}','{self.country}','{self.team_name}')"
     

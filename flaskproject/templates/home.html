@@ -1,1 +1,43 @@
 {% extends "layout.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="map" style="width: 100%; height: 400px;"></div>
+  <script>
+    var geocoder;
+    var map;
+
+    function initMap() {
+      geocoder = new google.maps.Geocoder();
+      var locationAddress = "Waterloo Road Molineux Stadium"; // Replace with the address you want to display
+
+      geocoder.geocode({ 'address': locationAddress }, function(results, status) {
+        if (status === 'OK') {
+          var location = results[0].geometry.location;
+          map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: location,
+          });
+
+          var marker = new google.maps.Marker({
+            map: map,
+            position: location,
+            title: 'Location Title', // Replace with your desired title
+          });
+        } else {
+          alert('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-kusCvU_3IRob5HDn_J5QxwIcW0vhb6s&callback=initMap"></script>
+</body>
+</html>
+
+{% endblock content %}

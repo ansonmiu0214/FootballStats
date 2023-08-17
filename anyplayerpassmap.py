@@ -33,14 +33,10 @@ def find_player_id(df, player_name):
     player_id = int(player_id)
     return player_id
 
-
-sb.competitions()
-(sb.matches(competition_id=11, season_id=4))
-
 home = input("Home Team:")
 away = input("Away Team:")
-# home = "Portugal"  # Change later to input
-# away = "Ghana"  # Change later to input
+home = "Portugal"  # Change later to input
+away = "Ghana"  # Change later to input
 MATCH_ID = find_match_id(home, away)
 print(MATCH_ID)
 
@@ -55,8 +51,7 @@ df = pd.merge(left=match_event_df, right=match_360_df,
 
 
 # Showing the name temp
-player_info_df = df[['player_id', 'player']
-                    ].drop_duplicates().reset_index(drop=True)
+player_info_df = df[['player_id', 'player']].drop_duplicates().reset_index(drop=True)
 print(player_info_df)
 
 
@@ -70,6 +65,7 @@ df = df[(df['player_id'] == PLAYER_ID) & (
 df[['x_start', 'y_start']] = pd.DataFrame(df.location.tolist(), index=df.index)
 df[['x_end', 'y_end']] = pd.DataFrame(
     df.pass_end_location.tolist(), index=df.index)
+
 
 p = Pitch(pitch_type='statsbomb')
 fig, ax = p.draw(figsize=(12, 8))
