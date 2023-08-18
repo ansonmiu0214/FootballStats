@@ -3,7 +3,7 @@ from mplsoccer import Pitch, VerticalPitch
 from flask import render_template, url_for, flash, redirect, request, jsonify, send_file
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
-from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo
+from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import text
 import http.client
@@ -18,7 +18,7 @@ from scipy.ndimage import gaussian_filter
 import matplotlib
 connt = http.client.HTTPSConnection("v3.football.api-sports.io")
 
-
+# Generates the heatMapmodel using the matchid and playerid
 def heatMapmodel(id,player):
     
     match_event_df = sb.events(match_id=id)
@@ -45,7 +45,7 @@ def heatMapmodel(id,player):
     """
     pitch = Pitch(pitch_type='statsbomb', line_zorder=2,
                 pitch_color='#22312b', line_color='white') 
-
+    # Generates the heatmap with a bar on the side
     fig, ax = pitch.draw(figsize=(16, 9))
     bin_statistic = pitch.bin_statistic(
         passing.x_start, passing.y_start, statistic='count', bins=(25, 25))
@@ -57,15 +57,15 @@ def heatMapmodel(id,player):
     img_stream.seek(0)
     return img_stream
 
+# Fetches the team badge if it is not in the database table then it will call an api for the badge and stores it
 def logoChecker(teamName):
-    if teamName == 'Leicester City':
-        teamName = 'Leicester'
     team = Teams.query.filter_by(team_name=teamName).first()
     team_backup = TeamsLogo.query.filter_by(team_name=teamName).first()
     if team:
         return team.team_logo_url
     if team_backup:
         return team_backup.team_logo_url
+    # Fetches from the API since it is not in the database
     else:
         payload = {}
         headers = {
@@ -73,14 +73,18 @@ def logoChecker(teamName):
             'x-rapidapi-host': 'v3.football.api-sports.io',
             'season': 2023
         }
+
+        # If there is a space, the spae is replaced with %20 as thats what the api uses instead of spaces
         connt.request("GET", f"/teams?name={teamName.replace(' ', '%20')}", headers=headers)
         res = connt.getresponse()
         data = res.read()
         data = json.loads(data.decode('utf-8'))
+        # After the API Call, I have to assign each part to a variable
         teamid = data['response'][0]["team"]["id"]
         team_name = data["response"][0]["team"]["name"]
         country = data["response"][0]["team"]["country"]
         team_logo_url = data['response'][0]['team']['logo']
+        # Links it to the corresposing value and then it commits it to the database table called TeamsLogo
         team = TeamsLogo(teamid=teamid, team_name=team_name,
                          country=country, team_logo_url=team_logo_url)
         db.session.add(team)
@@ -88,7 +92,7 @@ def logoChecker(teamName):
         team = TeamsLogo.query.filter_by(team_name=teamName).first()
         return team.team_logo_url
 
-
+# Takes the matchid and the dataframe and generates and returns the starting formation of the match
 def formationplot(id,df):
     df = sb.events(match_id=id)
     home_position_id = []
@@ -160,6 +164,7 @@ def formationplot(id,df):
     img_stream.seek(0)
     return img_stream
 
+# Takes the matchid and the team name. It will use the team and generate a passing network model
 def passingNetworkmodel(id,team):
     df = sb.events(match_id=id)
     match_event_df = sb.events(match_id=id)
@@ -210,6 +215,7 @@ def passingNetworkmodel(id,team):
     img_stream.seek(0)
     return img_stream
 
+# Takes the matchid and the team name. Generates the passing map of the whole team
 def passmapmodelteam(id,team):
     data1 = sb.events(match_id=id)
     data1 = data1[(data1['team'] == team) & (
@@ -243,6 +249,7 @@ def passmapmodelteam(id,team):
     img_stream.seek(0)
     return img_stream
 
+# Takes the id, home and away team. Returns the scores and includes own goals
 def get_scorers(id,home_team,away_team):
     df = sb.events(match_id=id)
     HomeGoals = []
@@ -251,7 +258,6 @@ def get_scorers(id,home_team,away_team):
     AwayScorers = df[(df['shot_outcome'] == 'Goal') & (df['type'] == 'Shot') & (df['team']== away_team)].reset_index(drop=True)
     OwnGoalsForHomeTeam = df[(df['type']=='Own Goal Against') & (df['team']== home_team)].reset_index(drop=True)
     OwnGoalsForAwayTeam = df[(df['type']=='Own Goal Against') & (df['team']== away_team)].reset_index(drop=True)
-    print(OwnGoalsForAwayTeam)
     try:
         for i in range(0,len(HomeScorer)):
             player = HomeScorer['player'].values[i]
@@ -284,6 +290,7 @@ def get_scorers(id,home_team,away_team):
     except:
         pass
     return HomeGoals, AwayGoals
+
     
 def passmapmodelplayer(id,player):
     data1 = sb.events(match_id=id)
@@ -328,8 +335,43 @@ def getPlayerNames(id,team):
 
 @app.route("/")
 @app.route("/home")
+@login_required
 def home():
-    return render_template('home.html')
+    fav_team = current_user.favourite_team
+    teamid = Teams.query.filter_by(team_name=fav_team).first()
+    player = Players.query.filter_by(teamid=teamid.teamid).all()
+    if player:
+        pass
+    else:
+        payload = {}
+        headers = {
+            'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
+            'x-rapidapi-host': 'v3.football.api-sports.io',
+            'season': 2023
+        }
+        connt.request("GET", f"/players/squads?team={teamid.teamid}", headers=headers)
+        res = connt.getresponse()
+        data = res.read()
+        data = json.loads(data.decode('utf-8'))
+        for i in range(len(data['response'][0]['players'])):
+            playerid = data['response'][0]['players'][i]['id']
+            player_name = data['response'][0]['players'][i]['name']
+            player_number = data['response'][0]['players'][i]['number']
+            player_position = data['response'][0]['players'][i]['position']
+            player_image = data['response'][0]['players'][i]['photo']
+            
+            player = Players(playerid=playerid,player_name=player_name,player_number=player_number,player_position=player_position,player_image=player_image,teamid=teamid.teamid)
+            db.session.add(player)
+            db.session.commit()
+        player = Players.query.filter_by(teamid=teamid.teamid).all()
+    playerArray = [{'name': p.player_name, 'image': p.player_image,'position': p.player_position, 'number': p.player_number} for p in player]
+    print (playerArray)
+    teamaddress = teamid.stadium_name +" "+ teamid.stadium_address
+    leagueid = teamid.compid
+    stadium_image = teamid.stadium_image
+    team_badge = teamid.team_logo_url
+    stadium_name = teamid.stadium_name
+    return render_template('home.html',teamaddress=teamaddress,leagueid=leagueid,stadium_image=stadium_image,team_badge=team_badge,playerArray=playerArray,stadium_name=stadium_name)
 
 
 @app.route("/about")
@@ -548,7 +590,6 @@ def get_match_stats():
     else:
         df = df.astype(str)
     conn.commit()
-    conn.close()
     global Gmatches_dataframe
     Gmatches_dataframe = df
     return jsonify({})

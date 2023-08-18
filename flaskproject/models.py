@@ -78,3 +78,15 @@ class TeamsLogo(db.Model):
     def __repr__(self):
         return f"TeamsLogo('{self.teamid}','{self.team_logo_url}','{self.country}','{self.team_name}')"
     
+
+class Players(db.Model):
+    playerid = db.Column(db.Integer,primary_key=True)
+    player_name = db.Column(db.String(300))
+    player_number = db.Column(db.String(300))
+    player_position = db.Column(db.String(300))
+    player_image = db.Column(db.String(300))
+    teamid = db.Column(db.Integer)
+
+    def __repr__(self):
+        return f"Players('{self.playerid}','{self.player_name}','{self.player_number}','{self.player_position}','{self.player_image}','{self.teamid}')"
+    

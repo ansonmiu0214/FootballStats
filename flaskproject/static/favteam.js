@@ -23,9 +23,6 @@ function filterCountries() {
 
 function displayTeams(button) {
   const leagueName = button.textContent;
-  alert(leagueName);
-  console.log(leagueName);
-  console.log(lastClickedButtonCountry);
 
   fetch("/query_teams", {
     method: "POST",
@@ -40,7 +37,6 @@ function displayTeams(button) {
     .then((response) => response.json())
     .then((data) => {
       //starts here
-      console.log(data);
       replaceButtons();
       addNewButtonsClubs(data);
     });
@@ -48,8 +44,6 @@ function displayTeams(button) {
 
 function showCountryName(button) {
   const countryName = button.textContent;
-  alert(countryName);
-  console.log(countryName);
   lastClickedButtonCountry = countryName;
   fetch("/query_country", {
     method: "POST",
@@ -61,7 +55,6 @@ function showCountryName(button) {
     .then((response) => response.json())
     .then((data) => {
       // Handle the response from the server if needed
-      console.log(data);
       data.forEach((comp) => {
         console.log(
           "Comp Name: " + comp.comp_name + "\nFlag URL: " + comp.logo_url
@@ -89,7 +82,6 @@ function replaceButtons() {
 // Function to add new buttons when clicking a button outside the div
 function addNewButtonsLeague(leagues) {
   const countryList = document.getElementById("countryList");
-  console.log(leagues);
 
   leagues.forEach((league) => {
     const li = document.createElement("li");
@@ -116,7 +108,6 @@ function addNewButtonsLeague(leagues) {
 
 function addNewButtonsClubs(clubs) {
   const countryList = document.getElementById("countryList");
-  console.log(clubs);
 
   clubs.forEach((club) => {
     const li = document.createElement("li");
@@ -139,7 +130,6 @@ function addNewButtonsClubs(clubs) {
   filterCountries();
 }
 function StoreSelectedTeam(team) {
-  console.log("FINALLY");
   const teamName = team.textContent;
 
   fetch("/store_favteam", {
@@ -152,7 +142,6 @@ function StoreSelectedTeam(team) {
     .then((response) => response.json())
     .then((data) => {
       // Handle the response from the server if needed
-      console.log(data);
       redirectToHome();
     });
 }

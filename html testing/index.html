@@ -3,37 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card {
+      position: relative;
+      border: 1px solid #ccc;
+      overflow: hidden;
+    }
+
+    .card img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    .overlay div {
+      font-size: 20px;
+      margin: 0;
+      font-family:'Bebas Neue', sans-serif;
+    }
+  </style>
+  <title>HTML Cards with Overlay</title>
 </head>
 <body>
-  <div id="map" style="width: 100%; height: 400px;"></div>
-  <script>
-    var geocoder;
-    var map;
-
-    function initMap() {
-      geocoder = new google.maps.Geocoder();
-      var locationAddress = "Waterloo Road Molineux Stadium"; // Replace with the address you want to display
-
-      geocoder.geocode({ 'address': locationAddress }, function(results, status) {
-        if (status === 'OK') {
-          var location = results[0].geometry.location;
-          map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 15,
-            center: location,
-          });
-
-          var marker = new google.maps.Marker({
-            map: map,
-            position: location,
-            title: 'Location Title', // Replace with your desired title
-          });
-        } else {
-          alert('Geocode was not successful for the following reason: ' + status);
-        }
-      });
-    }
-  </script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-kusCvU_3IRob5HDn_J5QxwIcW0vhb6s&callback=initMap"></script>
+  <div class="container-md border">
+    <div class="grid-container">
+      <div class="card">
+        <img src="placeholder-image.jpg" alt="Placeholder Image">
+        <div class="overlay">
+          <div>20</div>
+          <div>Samuel</div>
+        </div>
+      </div>
+      <div class="card">
+        <img src="placeholder-image.jpg" alt="Placeholder Image">
+        <div class="overlay">
+          <div>20</div>
+          <div>Samuel</div>
+        </div>
+      </div>
+      <!-- Repeat these card divs for as many cards as you need -->
+      <div class="card">
+        <img src="https://media-1.api-sports.io/football/players/2931.png" alt="Placeholder Image">
+        <div class="overlay">
+          <div>20</div>
+          <div>GOATON</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
+<script>
+  const gridContainer = document.querySelector('.grid-container'); // Use querySelector to get the first element with the class
+  console.log(gridContainer);
+
+  function createCard(playerImageSrc, playerNumber, playerName) {
+    const cardDiv = document.createElement("div");
+    cardDiv.className = "card";
+
+    const imgElement = document.createElement("img");
+    imgElement.src = playerImageSrc;
+    imgElement.alt = "Placeholder Image";
+
+    const overlayDiv = document.createElement("div");
+    overlayDiv.className = "overlay";
+
+    const numberDiv = document.createElement("div");
+    numberDiv.textContent = playerNumber;
+
+    const nameDiv = document.createElement("div");
+    nameDiv.textContent = playerName;
+
+    overlayDiv.appendChild(nameDiv);
+    overlayDiv.appendChild(numberDiv);
+
+    cardDiv.appendChild(imgElement);
+    cardDiv.appendChild(overlayDiv);
+
+    return cardDiv;
+}
+
+const newCard = createCard('https://media-1.api-sports.io/football/players/288006.png', 'Hojlund', 25);
+gridContainer.appendChild(newCard);
+
+  </script>
 </html>
