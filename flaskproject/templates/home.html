@@ -1,12 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
 <style>
-    [class*='col']{
-        padding: 1rem;
-        background-color: #33b5e5;
-        border: 2px solid #fff;
-        color: #ffff
-    }
      @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
     .grid-container {
       display: grid;
@@ -43,10 +37,15 @@
       margin: 0;
       font-family:'Bebas Neue', sans-serif;
     }
+    h1 
+    {
+      font-family:'Bebas Neue', sans-serif;
+      color: white;
+    }
 
 </style>
 <h1 style="text-align: center; color:rgb(255, 255, 255); font-family:'Bebas Neue', sans-serif;">{{current_user.favourite_team}}</h1>
-<div class="container-md border">
+<div class="container-md">
     <div class="row">
     <div class="col"></div>
     <div class="col text-center">
@@ -54,7 +53,7 @@
     </div>
     <div class="col"></div>
 </div>
-<div class="container-md border">
+<div class="container-md">
     <div class="row">
         <div class="col">
             <div id="wg-api-football-games"
@@ -102,7 +101,7 @@
         </script>
         </div>
     </div>
-    <div class="container-md border"></div>
+    <div class="container-md"></div>
     <div class="row">
         <div class="col text-center">
         <h1>Squad</h1>

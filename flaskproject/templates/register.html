@@ -1,5 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
+<style>
+    body {
+        color: white;
+    }
+</style>
+<div class="container mt-5">
     <div class="content-section">
         <form method="POST" action="">
             {{form.hidden_tag()}}
@@ -7,7 +13,6 @@
                 <legend>Join Today</legend>
                 <div class="form-group">
                     {{form.username.label(class="form-control-label")}}
-
                     {% if form.username.errors%}
                         {{form.username(class="form-control form-control-lg is-invalid")}}
                         <div class="invalid-feedback">
@@ -18,7 +23,6 @@
                     {% else %} 
                         {{form.username(class="form-control form-control-lg")}}       
                     {% endif %}
-
                 </div>
                 <div class="form-group">
                     {{form.email.label(class="form-control-label")}}
@@ -70,4 +74,5 @@
             </small>
         </div>
     </div>
+</div>
 {% endblock content %}
