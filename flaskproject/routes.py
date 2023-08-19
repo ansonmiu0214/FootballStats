@@ -334,15 +334,20 @@ def getPlayerNames(id,team):
     return players
 
 @app.route("/")
+# Opens the home page route and requires the user to be logged in
 @app.route("/home")
 @login_required
 def home():
     fav_team = current_user.favourite_team
+    # Queries the datbase for the Team table where the team name equals the favourite team
     teamid = Teams.query.filter_by(team_name=fav_team).first()
+    # Queries the database in the Player table where teamid equals the id of the user's favourite team
     player = Players.query.filter_by(teamid=teamid.teamid).all()
+    # If the queries is successful, it will pass and then gets uploaded to the website
     if player:
         pass
     else:
+        # If the queries is not successful the program will query the API and store the players in the user's favourite team into the players table
         payload = {}
         headers = {
             'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
@@ -362,10 +367,13 @@ def home():
             
             player = Players(playerid=playerid,player_name=player_name,player_number=player_number,player_position=player_position,player_image=player_image,teamid=teamid.teamid)
             db.session.add(player)
+            # Commits it to the database
             db.session.commit()
+        # Does the query again
         player = Players.query.filter_by(teamid=teamid.teamid).all()
+    # Converts it to a python dictionary/json and with the for loop it allows me to do it for all the players in a team
     playerArray = [{'name': p.player_name, 'image': p.player_image,'position': p.player_position, 'number': p.player_number} for p in player]
-    print (playerArray)
+    # Information is stored and passed to the website to display the information
     teamaddress = teamid.stadium_name +" "+ teamid.stadium_address
     leagueid = teamid.compid
     stadium_image = teamid.stadium_image
@@ -373,12 +381,7 @@ def home():
     stadium_name = teamid.stadium_name
     return render_template('home.html',teamaddress=teamaddress,leagueid=leagueid,stadium_image=stadium_image,team_badge=team_badge,playerArray=playerArray,stadium_name=stadium_name)
 
-
-@app.route("/about")
-def about():
-    return render_template('about.html')
-
-
+# Directs the user to the register page. If a route has @login_require, it will redirect them to the register or login page
 @app.route("/register", methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -395,14 +398,16 @@ def register():
         return redirect(url_for('favteam'))
     return render_template('register.html', title='Register', form=form)
 
-
+# Directs the user to the login page. If a route has @login_require, it will redirect them to the register or login page
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
+    #Queries the sql database to check if the user exists 
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
+        # Checks the password using the hash and compares it to the password hash in the database if it matches then the user is logged in
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
@@ -427,6 +432,7 @@ def account():
 @app.route("/favteam")
 @login_required
 def favteam():
+    # Queries the SQL database to get all countries supported by the API
     data = Countries.query.all()
     return render_template('favteam.html', data=data)
 
@@ -444,7 +450,7 @@ def query_country():
 
             results = [{'comp_name': c.name, 'logo_url': c.logo,
                         'comp_id': c.compid} for c in comps]
-
+            # Returns results as a json so that I can use it in js
             return jsonify(results)
         else:
             return jsonify({'message': 'comps not found'})
@@ -452,18 +458,23 @@ def query_country():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-
+# Used to pass information to the website using python functions such as API(statsbombpy), matplot graphs and sqlalch
+# Used to find all the teams in a single league
 @app.route('/query_teams', methods=['POST'])
 def query_teams():
+    # Fetches the data from the website that is parsed. League name and Country name is parsed
     data = request.get_json()
     league_name = data['leagueName']
     country_name = data['lastClickedButtonCountry']
+    # Queries the competitions that is from the given league name and country name
     comp = Competitions.query.filter_by(
         name=league_name, country=country_name).first()
     leagueid = comp.compid
+    # Queries the team that are in the leagueid given by the user
     team = Teams.query.filter_by(compid=leagueid).all()
+    # If the query is not successful it will then go to the api using the league id to populate the database
     if team:
-
+        # Using the for loop, it creates jsons that javascript can read
         results = [{'teamid': t.teamid, 'team_badge': t.team_logo_url,
                     'comp_id': t.compid, 'team_name': t.team_name} for t in team]
         return jsonify(results)
@@ -479,6 +490,7 @@ def query_teams():
         res = connt.getresponse()
         data = res.read()
         data = json.loads(data.decode('utf-8'))
+        # This for loop goes through every team in the league and assigns variables to each piece of data
         for x in range(len(data['response'])):
             teamid = data['response'][x]["team"]["id"]
             team_name = data["response"][x]["team"]["name"]
@@ -489,63 +501,69 @@ def query_teams():
             stadium_capacity = data['response'][x]['venue']['capacity']
             stadium_address = data['response'][x]['venue']['address']
             stadium_image = data['response'][x]['venue']['image']
+            # Creates a team variable that holds all the information for a single team
             team = Teams(teamid=teamid, team_name=team_name, country=country, team_logo_url=team_logo_url, stadium_id=stadium_id,
                          stadium_name=stadium_name, stadium_capacity=stadium_capacity, stadium_image=stadium_image,stadium_address=stadium_address,compid=leagueid)
+            # The team that was created is then inserted into the database into the teams table
             db.session.add(team)
+            # Commits the team into the teams table 
             db.session.commit()
+        # Queries the team so that javascript can use it and display the information on a button
         team = Teams.query.filter_by(compid=leagueid).all()
+        # Converts the query into json so that javascript can read it
         results = [{'teamid': t.teamid, 'team_badge': t.team_logo_url,
                     'comp_id': t.compid, 'team_name': t.team_name} for t in team]
         return jsonify(results)
 
 
+# After displaying and select a team in a given year, this formation retreives the selected team and stores the selected team in the user table in the favourite team column
 @app.route('/store_favteam', methods=['POST'])
 def store_favteam():
     data = request.get_json()
     team_name = data['teamName']
-    print(team_name)
     current_user.favourite_team = team_name
     db.session.commit()
     flash(f'{team_name} was selected as your Favourite Team!', 'success')
+    # No information is required to be set
     return jsonify({})
 
-# Fetches the competitions that I can use to show the data models
-
-
-
+# Shows the competitions and matches that the api have match data allowing the user to pick what match they want to know
 @app.route('/stats')
 def stats():
+    # Uses the statbombspy api to gather all the competition it has data on
     comps = sb.competitions()
     comp_season_data = []
     for index, row in comps.iterrows():
+        # Data is placed inside a button in the stats.html
         comp_season_data.append((row['competition_name'], row['season_name']))
 
     return render_template('stats.html', data=comp_season_data)
 
-
+# Returns the competition id and season id to the javascript and html website
 @app.route('/get_comp_id&seasonid', methods=['POST'])
 def get_comp_id_seasonid():
+    # Uses the selected competiton name and competition year
     data = request.get_json()
     compName = data['compName']
     compYear = data['compYear']
+    # Queries the database to get information about the selected competition
     match = Comps.query.filter_by(
         competition_name=compName, season_name=compYear).first()
+    # Creates a json
     results = [{'compId': match.competition_id, 'seasonId': match.season_id}]
     return jsonify(results)
 
-
+# Queries the database and get the information about the match selected by the user
 @app.route('/get_selected_comp', methods=['POST'])
 def get_selected_comp():
     conn = db.engine.connect()
-    print('starting')
     data = request.get_json()
     compId = data['compId']
     seasonId = data['seasonId']
-    # matches = Comps.query.filter_by(competition_id=compId,season_id=seasonId)
     query = f'SELECT * FROM matches WHERE compId={compId} AND seasonId ={seasonId}'
     df = pd.read_sql_query(query, conn)
+    # If its empty it stores it in the database
     if df.empty:
-        print("Starting")
         matches = (sb.matches(competition_id=compId, season_id=seasonId))
         matches = matches.assign(compId=compId, seasonId=seasonId)
         matches.to_sql('matches', conn, if_exists='append', index=False)
@@ -560,11 +578,12 @@ def get_selected_comp():
     matches_json = json.loads(matches_json)
     return jsonify(matches_json)
 
-
+# Used to get the match data
 @app.route('/get_match_stats', methods=['POST'])
 def get_match_stats():
     conn = db.engine.connect()
     data = request.get_json()
+    # Global variables are used so that I can create the models when requested
     global gMATCH_ID
     global gHome_Score
     global gAway_Score
@@ -594,21 +613,25 @@ def get_match_stats():
     Gmatches_dataframe = df
     return jsonify({})
 
-
+# The webpage that displays the match stats
 @app.route('/matchstats')
 def matchstats():
+    # Uses the logoChecker function to find the club's badge
     team1_logo = logoChecker(gHome_Team)
     team2_logo = logoChecker(gAway_Team)
+    # Returns all the players that played for the Home and Away team
     home_players = getPlayerNames(gMATCH_ID,gHome_Team)
     away_players = getPlayerNames(gMATCH_ID,gAway_Team)
-    print(home_players)
+    # Returns who scored each goal
     homegoals,awaygoals = get_scorers(gMATCH_ID,gHome_Team,gAway_Team)
+    # Final Score
     score = str(gHome_Score) + " - " + str(gAway_Score)
+    # Generates a formation pictures using the starters for each team
     img_stream = formationplot(gMATCH_ID,Gmatches_dataframe)
     img_data = base64.b64encode(img_stream.read()).decode('utf-8')
     return render_template('matchstats.html', img_data=img_data,score=score, gHome_Team=gHome_Team, gAway_Team=gAway_Team, gMATCH_ID=gMATCH_ID,team1_logo=team1_logo,team2_logo=team2_logo,homegoals=homegoals,awaygoals=awaygoals,home_players=home_players,away_players=away_players)
 
-
+# Returns an images of the passmap of the team
 @app.route('/get_passmapteam', methods=['POST'])
 def get_passmap():
     data = request.get_json()
@@ -617,6 +640,7 @@ def get_passmap():
     passmap = base64.b64encode(passmap.read()).decode('utf-8')
     return jsonify({"image_data": passmap})
 
+# Returns an images of the passmap for a specific player
 @app.route('/get_passmapplayer', methods=['POST'])
 def get_passmapplayer():
     data = request.get_json()
@@ -625,6 +649,7 @@ def get_passmapplayer():
     passmap = base64.b64encode(passmap.read()).decode('utf-8')
     return jsonify({"image_data": passmap})
 
+# Returns an image of the pass network of the given team
 @app.route('/get_passnetwork', methods=['POST'])
 def get_passnetwork():
     data = request.get_json()
@@ -633,6 +658,7 @@ def get_passnetwork():
     passnetwork = base64.b64encode(passnetwork.read()).decode('utf-8')
     return jsonify({"image_data": passnetwork})
 
+# Returns the heatmap for a specific player
 @app.route('/get_heatmap', methods=['POST'])
 def get_heatmap():
     data = request.get_json()
