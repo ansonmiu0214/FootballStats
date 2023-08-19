@@ -1,0 +1,189 @@
+{% extends "layout.html" %}
+{% block content %}
+<style>
+     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card {
+      position: relative;
+      border: 1px solid #ccc;
+      overflow: hidden;
+      width: 250px; /* Change this value to adjust the width */
+      height: auto;
+    }
+
+    .card img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    .overlay div {
+      font-size: 20px;
+      margin: 0;
+      font-family:'Bebas Neue', sans-serif;
+    }
+    h1 
+    {
+      font-family:'Bebas Neue', sans-serif;
+      color: white;
+    }
+
+</style>
+<h1 style="text-align: center; color:rgb(255, 255, 255); font-family:'Bebas Neue', sans-serif;">{{current_user.favourite_team}}</h1>
+<div class="container-md">
+    <div class="row">
+    <div class="col"></div>
+    <div class="col text-center">
+        <img src="{{team_badge}}" alt="Description of the image" width="300" height="300">
+    </div>
+    <div class="col"></div>
+</div>
+<div class="container-md">
+    <div class="row">
+        <div class="col">
+            <div id="wg-api-football-games"
+        data-host="v3.football.api-sports.io"
+        data-key="#remove46e3603952bbef534e2356d69f0a1ed6"
+        data-date=""
+        data-league="{{ leagueid }}"
+        data-season="2023"
+        data-theme="dark"
+        data-refresh=""
+        data-show-toolbar="true"
+        data-show-errors="false"
+        data-show-logos="false"
+        data-modal-game="true"
+        data-modal-standings="true"
+        data-modal-show-logos="true"
+        style="height: 550px;overflow:scroll;">
+    </div>
+    <script
+    type="module"
+    src="https://widgets.api-sports.io/2.0.3/widgets.js">
+</script>
+        </div>
+        <div class="col text-center">
+            <h1>{{stadium_name}}</h1>
+            <img src="{{stadium_image}}" alt="Description of the image" width="500" height="300">
+            <div class="mx-auto" id="map" style="width: 500px; height: 300px;"></div>
+        </div>
+        <div class="col">
+            <div id="wg-api-football-standings"
+            data-host="v3.football.api-sports.io"
+            data-key="#remove46e3603952bbef534e2356d69f0a1ed6"
+            data-league="{{ leagueid }}"
+            data-team=""
+            data-season="2023"
+            data-theme="dark"
+            data-show-errors="false"
+            data-show-logos="true"
+            class="wg_loader"
+            style="height: 700px">
+        </div>
+        <script
+            type="module"
+            src="https://widgets.api-sports.io/2.0.3/widgets.js">
+        </script>
+        </div>
+    </div>
+    <div class="container-md"></div>
+    <div class="row">
+        <div class="col text-center">
+        <h1>Squad</h1>
+        <button class="btn btn-primary mr-2" onclick="ShowCard(this,playerArray)">Attacker</button>
+        <button class="btn btn-success mr-2" onclick="ShowCard(this,playerArray)">Midfielder</button>
+        <button class="btn btn-info mr-2" onclick="ShowCard(this,playerArray)">Defender</button>
+        <button class="btn btn-danger" onclick="ShowCard(this,playerArray)">Goalkeeper</button>
+        </div>
+    </div>
+    <div class="container-md">
+      <div class="grid-container"></div>
+    </div>
+</div>
+<script>
+    var geocoder;
+    var map;
+    var locationAddress = {{teamaddress|tojson}};
+    var playerArray = {{playerArray|tojson}}
+    const gridContainer = document.querySelector('.grid-container'); 
+
+
+    function initMap() {
+      geocoder = new google.maps.Geocoder();
+
+      geocoder.geocode({ 'address': locationAddress }, function(results, status) {
+        if (status === 'OK') {
+          var location = results[0].geometry.location;
+          map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: location,
+          });
+
+          var marker = new google.maps.Marker({
+            map: map,
+            position: location,
+            title: 'Location Title',
+          });
+        } else {
+          alert('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+    function createCard(playerImageSrc, playerNumber, playerName) {
+    const cardDiv = document.createElement("div");
+    cardDiv.className = "card";
+
+    const imgElement = document.createElement("img");
+    imgElement.src = playerImageSrc;
+    imgElement.alt = "Placeholder Image";
+
+    const overlayDiv = document.createElement("div");
+    overlayDiv.className = "overlay";
+
+    const numberDiv = document.createElement("div");
+    numberDiv.textContent = playerNumber;
+
+    const nameDiv = document.createElement("div");
+    nameDiv.textContent = playerName;
+
+    overlayDiv.appendChild(numberDiv);
+    overlayDiv.appendChild(nameDiv);
+    
+
+    cardDiv.appendChild(imgElement);
+    cardDiv.appendChild(overlayDiv);
+
+    return cardDiv;
+}   
+    function displayCard(playerArray,currentType){
+      for (const player of playerArray) {
+        if (player.position == currentType){
+        newCard = createCard(player.image,player.number,player.name)
+        gridContainer.appendChild(newCard);
+      }
+        
+      }
+}
+    function ShowCard(button,playerArray){
+      gridContainer.innerHTML = "";
+      displayCard(playerArray,button.textContent)
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-kusCvU_3IRob5HDn_J5QxwIcW0vhb6s&callback=initMap"></script>
+</script>
+{% endblock content %}

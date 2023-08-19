@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+</style>
+<div class="Desktop1">
+  <img class="Badge1" style="width: 200px; height: 200px; left: 99px; top: 42px; position: absolute" src="{{ team1_logo }}" />
+  <img class="Badge2" style="width: 200px; height: 200px; left: 1373px; top: 42px; position: absolute" src="{{ team2_logo }}" />
+  <div class="Matchscore" style="width: 219px; height: 79px; left: 723px; top: 110px; position: absolute; text-align: center; color: white; font-size: 50px; font-family: Source Serif Pro; font-weight: 700; word-wrap: break-word">{{ score }}</div>
+  <div class="ManchesterUnited" style="width: 345px; height: 30px; left: 322px; top: 49px; position: absolute; color: white; font-size: 32px; font-family: Source Serif Pro; font-weight: 700; word-wrap: break-word">{{ gHome_Team }}</div>
+  <div class="Chelsea" style="width: 281px; height: 37px; left: 1011px; top: 42px; position: absolute; text-align: right; color: white; font-size: 32px; font-family: Source Serif Pro; font-weight: 700; word-wrap: break-word">{{gAway_Team}}</div>
+  <div class="Team2Score" style="width: 239px; height: 142px; left: 1053px; top: 118px; position: absolute; text-align: right; color: white; font-size: 20px; font-family: Anonymous Pro; font-weight: 400; word-wrap: break-word">{% for score in awaygoals %}{{score}}<br>{% endfor %}</div>
+  <div class="Team1Score" style="width: 464px; height: 105px; left: 322px; top: 118px; position: absolute; color: white; font-size: 20px; font-family: Anonymous Pro; font-weight: 400; word-wrap: break-word">{% for score in homegoals %}{{score}}<br>{% endfor %}</div>
+  <img class="Formation" style="width: 1007px; height: 487px; left: 317px; top: 238px; position: absolute" src="data:image/png;base64,{{ img_data }}" />
+
+ <button class="HeatmapButton" id="heatmapBtn" onclick="setActiveButton('Heatmap')" style="padding-top: 5px; padding-bottom: 5px; padding-left: 53px; padding-right: 52px; left: 1097px; top: 788px; position: absolute; background: #0E1117; border-radius: 10px; border: 0.50px white solid; justify-content: center; align-items: center; display: inline-flex; color: white; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word; cursor: pointer; outline: none;">
+  Heatmap
+</button>
+
+<button class="PassnetworkButton" id="passnetworkBtn" onclick="setActiveButton('PassNetwork')" style="padding-left: 25px; padding-right: 25px; padding-top: 5px; padding-bottom: 5px; left: 721px; top: 788px; position: absolute; background: #0E1117; border-radius: 10px; border: 0.50px white solid; justify-content: center; align-items: center; display: inline-flex; color: white; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word; cursor: pointer; outline: none;">
+  Pass Network
+</button>
+
+<button class="PassmapButton" id="passmapBtn" onclick="setActiveButton('Passmap')" style="width: 212px; height: 39px; left: 356px; top: 788px; position: absolute; background: #0E1117; border-radius: 10px; border: 0.50px white solid; justify-content: center; align-items: center; display: inline-flex; color: white; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word; cursor: pointer; outline: none;">
+  Passmap
+</button>
+
+  <button class="Individualoption d-none" id="individualButton"style="width: 212px; height: 39px; left: 1097px; top: 890px; position: absolute; background: #0E1117; border-radius: 10px; border: 0.50px white solid; justify-content: center; align-items: center; display: inline-flex; color: white; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word; cursor: pointer; outline: none;">
+  Individual
+</button>
+
+  <button class="TeamOption d-none" id="teamOptionButton" style="width: 212px; height: 39px; left: 361px; top: 890px; position: absolute; background: #0E1117; border-radius: 10px; border: 0.50px white solid; justify-content: center; align-items: center; display: inline-flex; color: white; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word; cursor: pointer; outline: none;">
+  Team
+</button>
+
+  <button class="Teamselector d-none" id="teamButton" style="width: 212px; height: 39px; left: 723px; top: 889px; position: absolute; background: #0E1117; border-radius: 10px; border: 0.50px white solid; justify-content: center; align-items: center; display: inline-flex; color: white; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word; cursor: pointer; outline: none;">{{ gHome_Team}}</button>
+  <div class="Dropdown d-none" id="playerDropdowndiv" style="width: 482px; left: 586px; top: 977px; position: absolute;">
+  <select id="playerDropdown" style="width: 100%; height: 100%; background: #D9D9D9; border: none; outline: none;">
+    <option value="option1">Option 1</option>
+    <option value="option2">Option 2</option>
+    <option value="option3">Option 3</option>
+    <!-- Add more options as needed -->
+  </select>
+</div>
+
+  <div class="ButtonContainer" style="width: 243px; left: 699px; top: 1058px; position: absolute;">
+  <button class="ConfirmButton d-none" id="confirmbtn" style="width: 100%; height: 100%; background: #D9D9D9; border: none; outline: none; cursor: pointer;">
+    Click Me
+  </button>
+</div>
+<img class = 'modelimage d-none' id="imagemodels" style="width: 1023px; height: 507px; left: 321px; top: 1157px; position: absolute" src="https://via.placeholder.com/1023x507" />
+</div>
+
+<script>
+  var team1 = {{ gHome_Team|tojson }};
+  var team2 = {{ gAway_Team|tojson }};
+  var homeplayers = {{ home_players|tojson}};
+  var awayplayers = {{ away_players|tojson}};
+</script>
+<script src="{{ url_for('static', filename='matchstats.js') }}"></script>
+{% endblock content %}

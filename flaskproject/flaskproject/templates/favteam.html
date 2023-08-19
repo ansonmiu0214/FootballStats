@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+<script src="{{ url_for('static', filename='favteam.js') }}"></script>
+<div id="countryListContainer">
+    <input type="text" id="searchBar" onkeyup="filterCountries()" placeholder="Search for countries...">
+    <ul id="countryList">
+      {% for row in data %}
+        <li>
+            <button onclick="showCountryName(this)"><img src="{{ row.flag_url }}" alt="Icon" style="width: 50px; height: 50px;" />{{row.name}}</button>
+        </li>
+      {% endfor %}       
+  </ul>
+<script>
+  function redirectToHome() {
+  window.location.href = "{{ url_for('home')}}";
+}
+</script>
+{% endblock content %}
