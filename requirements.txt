@@ -12,5 +12,4 @@ seaborn==0.12.2
 SQLAlchemy==2.0.19
 statsbombpy==1.11.0
 WTForms==3.0.1
-Flask-SQLAlchemy-Meiqia==2016.8.1
 
