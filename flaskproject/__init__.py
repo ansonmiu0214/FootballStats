@@ -12,4 +12,4 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-import routes
+from flaskproject import routes

@@ -1,9 +1,9 @@
 from positiondict import my_dictionary as dct
 from mplsoccer import Pitch, VerticalPitch
 from flask import render_template, url_for, flash, redirect, request, jsonify, send_file
-from __init__ import app, db, bcrypt
-from forms import RegistrationForm, LoginForm
-from models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
+from flaskproject import app, db, bcrypt
+from flaskproject.forms import RegistrationForm, LoginForm
+from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import text
 import http.client
@@ -374,6 +374,9 @@ def home():
     return render_template('home.html',teamaddress=teamaddress,leagueid=leagueid,stadium_image=stadium_image,team_badge=team_badge,playerArray=playerArray,stadium_name=stadium_name)
 
 
+@app.route("/about")
+def about():
+    return render_template('about.html')
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -638,6 +641,3 @@ def get_heatmap():
     heatmap = base64.b64encode(heatmap.read()).decode('utf-8')
     return jsonify({"image_data": heatmap})
 
-if __name__ == "__main__":
-
-    app.run(debug=True)
