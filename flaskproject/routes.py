@@ -1,6 +1,6 @@
 from positiondict import my_dictionary as dct
 from mplsoccer import Pitch, VerticalPitch
-from flask import render_template, url_for, flash, redirect, request, jsonify, send_file
+from flask import render_template, url_for, flash, redirect, request, jsonify, send_file, Flask
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
 from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
@@ -16,7 +16,20 @@ import base64
 import seaborn as sns
 from scipy.ndimage import gaussian_filter
 import matplotlib
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
+
 connt = http.client.HTTPSConnection("v3.football.api-sports.io")
+
+
+def create_app(test_config=None):
+    app = Flask(__name__)
+
+
+
+
 
 # Generates the heatMapmodel using the matchid and playerid
 def heatMapmodel(id,player):
