@@ -6,7 +6,7 @@ import json
 # project
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
-from flaskproject.logic import leaguelib, statslib
+from flaskproject.logic import leaguelib, statslib, utils
 from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
 from positiondict import my_dictionary as dct
 
@@ -68,202 +68,191 @@ def heatMapmodel(id,player):
 
 
 # Fetches the team badge if it is not in the database table then it will call an api for the badge and stores it
+@utils.log_exception
 def logoChecker(teamName):
-    try:
-        team = Teams.query.filter_by(team_name=teamName).first()
-        team_backup = TeamsLogo.query.filter_by(team_name=teamName).first()
-        if team:
-            return team.team_logo_url
-        if team_backup:
-            return team_backup.team_logo_url
-        # Fetches from the API since it is not in the database
-        else:
-            team = leaguelib.get_team(teamName)
-            # After the API Call, I have to assign each part to a variable
-            teamid = team["id"]
-            team_name = team["name"]
-            country = team["country"]
-            team_logo_url = team['logo']
-            # Links it to the corresposing value and then it commits it to the database table called TeamsLogo
-            team = TeamsLogo(teamid=teamid, team_name=team_name,
-                            country=country, team_logo_url=team_logo_url)
-            db.session.add(team)
-            db.session.commit()
-            team = TeamsLogo.query.filter_by(team_name=teamName).first()
-            return team.team_logo_url
-    except Exception as e:
-        raise e
+    team = Teams.query.filter_by(team_name=teamName).first()
+    team_backup = TeamsLogo.query.filter_by(team_name=teamName).first()
+    if team:
+        return team.team_logo_url
+    if team_backup:
+        return team_backup.team_logo_url
+    # Fetches from the API since it is not in the database
+    else:
+        team = leaguelib.get_team(teamName)
+        # After the API Call, I have to assign each part to a variable
+        teamid = team["id"]
+        team_name = team["name"]
+        country = team["country"]
+        team_logo_url = team['logo']
+        # Links it to the corresposing value and then it commits it to the database table called TeamsLogo
+        team = TeamsLogo(teamid=teamid, team_name=team_name,
+                        country=country, team_logo_url=team_logo_url)
+        db.session.add(team)
+        db.session.commit()
+        team = TeamsLogo.query.filter_by(team_name=teamName).first()
+        return team.team_logo_url
 
 
 # Takes the matchid and the dataframe and generates and returns the starting formation of the match
-
+@utils.log_exception
 def formationplot(id,df):
-    try:
-        df = statslib.get_events_df(match_id=id)
-        home_position_id = []
-        away_position_id = []
+    df = statslib.get_events_df(match_id=id)
+    home_position_id = []
+    away_position_id = []
 
-        # Add jersey numbers to lineup df
-        home_jersey_number = []
-        away_jersey_number = []
+    # Add jersey numbers to lineup df
+    home_jersey_number = []
+    away_jersey_number = []
 
-        # Add player names to lineup df
-        home_player_name = []
-        away_player_name = []
+    # Add player names to lineup df
+    home_player_name = []
+    away_player_name = []
 
-        for i in range(len(df['tactics'][0]['lineup'])):
-            home_position_id.append(df['tactics'][0]['lineup'][i]['position']['id'])
-            away_position_id.append(df['tactics'][1]['lineup'][i]['position']['id'])
+    for i in range(len(df['tactics'][0]['lineup'])):
+        home_position_id.append(df['tactics'][0]['lineup'][i]['position']['id'])
+        away_position_id.append(df['tactics'][1]['lineup'][i]['position']['id'])
 
-            home_jersey_number.append(
-                df['tactics'][0]['lineup'][i]['jersey_number'])
-            away_jersey_number.append(
-                df['tactics'][1]['lineup'][i]['jersey_number'])
+        home_jersey_number.append(
+            df['tactics'][0]['lineup'][i]['jersey_number'])
+        away_jersey_number.append(
+            df['tactics'][1]['lineup'][i]['jersey_number'])
 
-            home_player_name.append(df.tactics[0]['lineup'][i]['player']['name'])
-            away_player_name.append(df.tactics[1]['lineup'][i]['player']['name'])
+        home_player_name.append(df.tactics[0]['lineup'][i]['player']['name'])
+        away_player_name.append(df.tactics[1]['lineup'][i]['player']['name'])
 
-        # Add position's x and y values
-        home_position_x = []
-        home_position_y = []
-        away_position_x = []
-        away_position_y = []
-        for i in range(11):
-            home_position_x.append(dct.get(home_position_id[i]).get('x') / 2)
-            home_position_y.append(dct.get(home_position_id[i]).get('y'))
-            away_position_x.append(
-                120 - (dct.get(away_position_id[i]).get('x') / 2))
-            away_position_y.append(dct.get(away_position_id[i]).get('y'))
+    # Add position's x and y values
+    home_position_x = []
+    home_position_y = []
+    away_position_x = []
+    away_position_y = []
+    for i in range(11):
+        home_position_x.append(dct.get(home_position_id[i]).get('x') / 2)
+        home_position_y.append(dct.get(home_position_id[i]).get('y'))
+        away_position_x.append(
+            120 - (dct.get(away_position_id[i]).get('x') / 2))
+        away_position_y.append(dct.get(away_position_id[i]).get('y'))
 
-        # Merges all lineup infos into home/away_lineup
-        home_lineup = pd.DataFrame(list(zip(home_position_id, home_player_name, home_position_x, home_position_y, home_jersey_number)),
-                                columns=['position_id', 'player_name', 'position_x', 'position_y', 'jersey_number'])
-        away_lineup = pd.DataFrame(list(zip(away_position_id, away_player_name, away_position_x, away_position_y, away_jersey_number)),
-                                columns=['position_id', 'player_name', 'position_x', 'position_y', 'jersey_number'])
+    # Merges all lineup infos into home/away_lineup
+    home_lineup = pd.DataFrame(list(zip(home_position_id, home_player_name, home_position_x, home_position_y, home_jersey_number)),
+                            columns=['position_id', 'player_name', 'position_x', 'position_y', 'jersey_number'])
+    away_lineup = pd.DataFrame(list(zip(away_position_id, away_player_name, away_position_x, away_position_y, away_jersey_number)),
+                            columns=['position_id', 'player_name', 'position_x', 'position_y', 'jersey_number'])
 
-        pitch = Pitch(pitch_type='statsbomb',
-                    pitch_color='#22312b', line_color='white')
-        fig, ax = pitch.draw(
-            figsize=(12, 8), constrained_layout=True, tight_layout=False)
+    pitch = Pitch(pitch_type='statsbomb',
+                pitch_color='#22312b', line_color='white')
+    fig, ax = pitch.draw(
+        figsize=(12, 8), constrained_layout=True, tight_layout=False)
 
-        # Plotting dots
-        plt.scatter(home_lineup['position_x'],
-                    home_lineup['position_y'], color='blue', s=700)
-        plt.scatter(away_lineup['position_x'],
-                    away_lineup['position_y'], color='red', s=700)
+    # Plotting dots
+    plt.scatter(home_lineup['position_x'],
+                home_lineup['position_y'], color='blue', s=700)
+    plt.scatter(away_lineup['position_x'],
+                away_lineup['position_y'], color='red', s=700)
 
-        # Plotting player names and jersey numbers
-        for index, row in home_lineup.iterrows():
-            pitch.annotate(int(row.jersey_number), xy=(row.position_x, row.position_y), c='white', va='center',
-                        ha='center', size=15, ax=ax)
-            pitch.annotate(row.player_name, xy=(row.position_x, row.position_y-3), c='white', va='center',
-                        ha='center', size=8, ax=ax)
-        for index, row in away_lineup.iterrows():
-            pitch.annotate(int(row.jersey_number), xy=(row.position_x, row.position_y), c='white', va='center',
-                        ha='center', size=15, ax=ax)
-            pitch.annotate(row.player_name, xy=(row.position_x, row.position_y-3), c='white', va='center',
-                        ha='center', size=8, ax=ax)
+    # Plotting player names and jersey numbers
+    for index, row in home_lineup.iterrows():
+        pitch.annotate(int(row.jersey_number), xy=(row.position_x, row.position_y), c='white', va='center',
+                    ha='center', size=15, ax=ax)
+        pitch.annotate(row.player_name, xy=(row.position_x, row.position_y-3), c='white', va='center',
+                    ha='center', size=8, ax=ax)
+    for index, row in away_lineup.iterrows():
+        pitch.annotate(int(row.jersey_number), xy=(row.position_x, row.position_y), c='white', va='center',
+                    ha='center', size=15, ax=ax)
+        pitch.annotate(row.player_name, xy=(row.position_x, row.position_y-3), c='white', va='center',
+                    ha='center', size=8, ax=ax)
 
-        img_stream = io.BytesIO()
-        plt.savefig(img_stream, format='png', transparent=True)
-        img_stream.seek(0)
-        return img_stream
-    except Exception as e:
-        raise e
+    img_stream = io.BytesIO()
+    plt.savefig(img_stream, format='png', transparent=True)
+    img_stream.seek(0)
+    return img_stream
 
 
 # Takes the matchid and the team name. It will use the team and generate a passing network model
+@utils.log_exception
 def passingNetworkmodel(id,team):
-    try:
-        df = statslib.get_events_df(match_id=id)
-        match_event_df = statslib.get_events_df(match_id=id)
-        df = df[(df['type'] == 'Pass')].reset_index(drop=True)
-        starter_id = []
-        for x in range(2):
-            for y in range(11):
-                player_id = match_event_df['tactics'][x]['lineup'][y]['player']['id']
-                starter_id.append(player_id)
+    df = statslib.get_events_df(match_id=id)
+    match_event_df = statslib.get_events_df(match_id=id)
+    df = df[(df['type'] == 'Pass')].reset_index(drop=True)
+    starter_id = []
+    for x in range(2):
+        for y in range(11):
+            player_id = match_event_df['tactics'][x]['lineup'][y]['player']['id']
+            starter_id.append(player_id)
 
-        # Seperates locations[x,y] and pass_end_location[x,y] into x_start,y_start,x_end,y_end
-        df[['x_start', 'y_start']] = pd.DataFrame(
-            df.location.tolist(), index=df.index)
-        df[['x_end', 'y_end']] = pd.DataFrame(
-            df.pass_end_location.tolist(), index=df.index)
-        passing = df[df['player_id'].isin(starter_id)][['player', 'player_id', 'team', 'pass_recipient',
-                                                            'x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
-        # Variable will be used
-        passing = passing[passing['team'] == team]
-        passing['pass_outcome'].fillna("Complete", inplace=True)
-        passing = passing[passing['pass_outcome'] == 'Complete']
-        average_location = passing.groupby('player').agg(
-            {'x_start': ['mean'], 'y_start': ['mean', 'count']})
-        average_location.columns = ['x_start', 'y_start', 'count']
+    # Seperates locations[x,y] and pass_end_location[x,y] into x_start,y_start,x_end,y_end
+    df[['x_start', 'y_start']] = pd.DataFrame(
+        df.location.tolist(), index=df.index)
+    df[['x_end', 'y_end']] = pd.DataFrame(
+        df.pass_end_location.tolist(), index=df.index)
+    passing = df[df['player_id'].isin(starter_id)][['player', 'player_id', 'team', 'pass_recipient',
+                                                        'x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
+    # Variable will be used
+    passing = passing[passing['team'] == team]
+    passing['pass_outcome'].fillna("Complete", inplace=True)
+    passing = passing[passing['pass_outcome'] == 'Complete']
+    average_location = passing.groupby('player').agg(
+        {'x_start': ['mean'], 'y_start': ['mean', 'count']})
+    average_location.columns = ['x_start', 'y_start', 'count']
 
-        pass_between = passing.groupby(
-            ['player', 'pass_recipient']).player_id.count().reset_index()
-        pass_between.rename({'player_id': 'pass_count'}, axis='columns', inplace=True)
-        pass_between = pass_between.merge(
-            average_location, left_on='player', right_index=True)
-        pass_between = pass_between.merge(
-            average_location, left_on='pass_recipient', right_index=True)
-        pass_between = pass_between[pass_between['pass_count'] > 3]
+    pass_between = passing.groupby(
+        ['player', 'pass_recipient']).player_id.count().reset_index()
+    pass_between.rename({'player_id': 'pass_count'}, axis='columns', inplace=True)
+    pass_between = pass_between.merge(
+        average_location, left_on='player', right_index=True)
+    pass_between = pass_between.merge(
+        average_location, left_on='pass_recipient', right_index=True)
+    pass_between = pass_between[pass_between['pass_count'] > 3]
 
 
-        p = Pitch(line_color='white', pitch_type='statsbomb',pitch_color='#22312b')
-        fig, ax = p.draw(figsize=(12, 8))
-        arrows = p.arrows(pass_between.x_start_x, pass_between.y_start_x,
-                        pass_between.x_start_y, pass_between.y_start_y, ax=ax, width=3, headwidth=3, color='red')
-        nodes = p.scatter(average_location.x_start, average_location.y_start, s=300,
-                        color='#d3d3d3', edgecolors='black', linewidth=2.5, alpha=1, zorder=1, ax=ax)
-        text_offset = 3  # You can increase or decrease this value to adjust the vertical offset
-        for i, player_name in enumerate(average_location.index):
-            ax.annotate(player_name, (average_location.x_start[i], average_location.y_start[i] - text_offset),
-                        ha='center', va='top', fontsize=9, color='white', weight='bold')
-        img_stream = io.BytesIO()
-        plt.savefig(img_stream, format='png', transparent=True)
-        img_stream.seek(0)
-        return img_stream
-    except Exception as e:
-        raise e
+    p = Pitch(line_color='white', pitch_type='statsbomb',pitch_color='#22312b')
+    fig, ax = p.draw(figsize=(12, 8))
+    arrows = p.arrows(pass_between.x_start_x, pass_between.y_start_x,
+                    pass_between.x_start_y, pass_between.y_start_y, ax=ax, width=3, headwidth=3, color='red')
+    nodes = p.scatter(average_location.x_start, average_location.y_start, s=300,
+                    color='#d3d3d3', edgecolors='black', linewidth=2.5, alpha=1, zorder=1, ax=ax)
+    text_offset = 3  # You can increase or decrease this value to adjust the vertical offset
+    for i, player_name in enumerate(average_location.index):
+        ax.annotate(player_name, (average_location.x_start[i], average_location.y_start[i] - text_offset),
+                    ha='center', va='top', fontsize=9, color='white', weight='bold')
+    img_stream = io.BytesIO()
+    plt.savefig(img_stream, format='png', transparent=True)
+    img_stream.seek(0)
+    return img_stream
 
 
 # Takes the matchid and the team name. Generates the passing map of the whole team
 def passmapmodelteam(id,team):
-    try:
-        
-        data1 = statslib.get_events_df(match_id=id)
-        data1 = data1[(data1['team'] == team) & (
-            data1['type'] == 'Pass')].reset_index(drop=True)
-        data1[['x_start', 'y_start']] = pd.DataFrame(
-            data1.location.tolist(), index=data1.index)
-        data1[['x_end', 'y_end']] = pd.DataFrame(
-            data1.pass_end_location.tolist(), index=data1.index)
-        passing = data1[['x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
-        # Populates all the blank field which are supposed "Pass"
-        for i in range(len(passing)):
-            if pd.isnull(passing.loc[i, 'pass_outcome']) and passing.loc[max(0, i - 1), 'pass_outcome'] != '':
-                passing.loc[i, 'pass_outcome'] = 'Pass'
-        # Changing to df just for now
-        df = passing
-        p = Pitch(pitch_type='statsbomb')
-        fig, ax = p.draw(figsize=(12, 8))
-        pass_outcomes = df['pass_outcome'].unique()
-        # Define colors for each pass outcome
-        pass_colors = {'Pass': 'green', 'Incomplete': 'red', 'Pass Offside': 'orange','Out': 'red','Unknown':'red','Injury Clearance':'orange'}
-        for outcome in pass_outcomes:
-            df_subset = df[df['pass_outcome'] == outcome]
-            p.scatter(x=df_subset['x_start'], y=df_subset['y_start'],
-                    color=pass_colors[outcome], ax=ax)
-            p.lines(xstart=df_subset['x_start'], ystart=df_subset['y_start'],
-                    xend=df_subset['x_end'], yend=df_subset['y_end'], color=pass_colors[outcome], ax=ax, comet=True)
-        legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=pass_colors[outcome], markersize=10, label=outcome) for outcome in pass_outcomes]
-        ax.legend(handles=legend_handles, loc='upper right')
-        img_stream = io.BytesIO()
-        plt.savefig(img_stream, format='png', transparent=True)
-        img_stream.seek(0)
-        return img_stream
-    except Exception as e:
-        raise e
+    data1 = statslib.get_events_df(match_id=id)
+    data1 = data1[(data1['team'] == team) & (
+        data1['type'] == 'Pass')].reset_index(drop=True)
+    data1[['x_start', 'y_start']] = pd.DataFrame(
+        data1.location.tolist(), index=data1.index)
+    data1[['x_end', 'y_end']] = pd.DataFrame(
+        data1.pass_end_location.tolist(), index=data1.index)
+    passing = data1[['x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
+    # Populates all the blank field which are supposed "Pass"
+    for i in range(len(passing)):
+        if pd.isnull(passing.loc[i, 'pass_outcome']) and passing.loc[max(0, i - 1), 'pass_outcome'] != '':
+            passing.loc[i, 'pass_outcome'] = 'Pass'
+    # Changing to df just for now
+    df = passing
+    p = Pitch(pitch_type='statsbomb')
+    fig, ax = p.draw(figsize=(12, 8))
+    pass_outcomes = df['pass_outcome'].unique()
+    # Define colors for each pass outcome
+    pass_colors = {'Pass': 'green', 'Incomplete': 'red', 'Pass Offside': 'orange','Out': 'red','Unknown':'red','Injury Clearance':'orange'}
+    for outcome in pass_outcomes:
+        df_subset = df[df['pass_outcome'] == outcome]
+        p.scatter(x=df_subset['x_start'], y=df_subset['y_start'],
+                color=pass_colors[outcome], ax=ax)
+        p.lines(xstart=df_subset['x_start'], ystart=df_subset['y_start'],
+                xend=df_subset['x_end'], yend=df_subset['y_end'], color=pass_colors[outcome], ax=ax, comet=True)
+    legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=pass_colors[outcome], markersize=10, label=outcome) for outcome in pass_outcomes]
+    ax.legend(handles=legend_handles, loc='upper right')
+    img_stream = io.BytesIO()
+    plt.savefig(img_stream, format='png', transparent=True)
+    img_stream.seek(0)
+    return img_stream
 
 
 # Takes the id, home and away team. Returns the scores and includes own goals
@@ -309,78 +298,73 @@ def get_scorers(id,home_team,away_team):
         raise e
     return HomeGoals, AwayGoals
 
-    
+
+@utils.log_exception    
 def passmapmodelplayer(id,player):
-    try:
-        data1 = statslib.get_events_df(match_id=id)
-        data1 = data1[(data1['player'] == player) & (
-            data1['type'] == 'Pass')].reset_index(drop=True)
-        data1[['x_start', 'y_start']] = pd.DataFrame(
-            data1.location.tolist(), index=data1.index)
-        data1[['x_end', 'y_end']] = pd.DataFrame(
-            data1.pass_end_location.tolist(), index=data1.index)
-        passing = data1[['x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
-        # Populates all the blank field which are supposed "Pass"
-        for i in range(len(passing)):
-            if pd.isnull(passing.loc[i, 'pass_outcome']) and passing.loc[max(0, i - 1), 'pass_outcome'] != '':
-                passing.loc[i, 'pass_outcome'] = 'Pass'
-        # Changing to df just for now
-        df = passing
-        p = Pitch(pitch_type='statsbomb')
-        fig, ax = p.draw(figsize=(12, 8))
-        pass_outcomes = df['pass_outcome'].unique()
-        # Define colors for each pass outcome
-        pass_colors = {'Pass': 'green', 'Incomplete': 'red', 'Pass Offside': 'orange','Out': 'red','Unknown':'red'}
-        for outcome in pass_outcomes:
-            df_subset = df[df['pass_outcome'] == outcome]
-            p.scatter(x=df_subset['x_start'], y=df_subset['y_start'],
-                    color=pass_colors[outcome], ax=ax)
-            p.lines(xstart=df_subset['x_start'], ystart=df_subset['y_start'],
-                    xend=df_subset['x_end'], yend=df_subset['y_end'], color=pass_colors[outcome], ax=ax, comet=True)
-        legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=pass_colors[outcome], markersize=10, label=outcome) for outcome in pass_outcomes]
-        ax.legend(handles=legend_handles, loc='upper right')
-        img_stream = io.BytesIO()
-        plt.savefig(img_stream, format='png', transparent=True)
-        img_stream.seek(0)
-        return img_stream
-    except Exception as e:
-        raise e
+    data1 = statslib.get_events_df(match_id=id)
+    data1 = data1[(data1['player'] == player) & (
+        data1['type'] == 'Pass')].reset_index(drop=True)
+    data1[['x_start', 'y_start']] = pd.DataFrame(
+        data1.location.tolist(), index=data1.index)
+    data1[['x_end', 'y_end']] = pd.DataFrame(
+        data1.pass_end_location.tolist(), index=data1.index)
+    passing = data1[['x_start', 'y_start', 'x_end', 'y_end', 'pass_outcome']]
+    # Populates all the blank field which are supposed "Pass"
+    for i in range(len(passing)):
+        if pd.isnull(passing.loc[i, 'pass_outcome']) and passing.loc[max(0, i - 1), 'pass_outcome'] != '':
+            passing.loc[i, 'pass_outcome'] = 'Pass'
+    # Changing to df just for now
+    df = passing
+    p = Pitch(pitch_type='statsbomb')
+    fig, ax = p.draw(figsize=(12, 8))
+    pass_outcomes = df['pass_outcome'].unique()
+    # Define colors for each pass outcome
+    pass_colors = {'Pass': 'green', 'Incomplete': 'red', 'Pass Offside': 'orange','Out': 'red','Unknown':'red'}
+    for outcome in pass_outcomes:
+        df_subset = df[df['pass_outcome'] == outcome]
+        p.scatter(x=df_subset['x_start'], y=df_subset['y_start'],
+                color=pass_colors[outcome], ax=ax)
+        p.lines(xstart=df_subset['x_start'], ystart=df_subset['y_start'],
+                xend=df_subset['x_end'], yend=df_subset['y_end'], color=pass_colors[outcome], ax=ax, comet=True)
+    legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=pass_colors[outcome], markersize=10, label=outcome) for outcome in pass_outcomes]
+    ax.legend(handles=legend_handles, loc='upper right')
+    img_stream = io.BytesIO()
+    plt.savefig(img_stream, format='png', transparent=True)
+    img_stream.seek(0)
+    return img_stream
 
 
+@utils.log_exception
 def getPlayerNames(id,team):
-    try:
-        df = statslib.get_events_df(match_id=id)
-        player_info_df = df.loc[df['team'] == team, ['player_id', 'player', 'team']]
-        player_info_df = player_info_df.drop_duplicates().reset_index(drop=True)
-        player_info_df = player_info_df.dropna(subset=['player'])
-        players = player_info_df['player'].tolist()
-        return players
-    except Exception as e:
-        raise e
+    df = statslib.get_events_df(match_id=id)
+    player_info_df = df.loc[df['team'] == team, ['player_id', 'player', 'team']]
+    player_info_df = player_info_df.drop_duplicates().reset_index(drop=True)
+    player_info_df = player_info_df.dropna(subset=['player'])
+    players = player_info_df['player'].tolist()
+    return players
 
 
 """API routes"""
 
 @app.route('/query_country', methods=['POST'])
+@utils.return_exception_as_json
+@utils.log_exception
 def query_country():
-    try:
-        data = request.get_json()
-        country_name = data['countryName']
+    data = request.get_json()
+    country_name = data['countryName']
 
-        # Query the country from the database using SQLAlchemy
-        comps = Competitions.query.filter_by(country=country_name).all()
-        if comps:
-            # You can access the country's flag_url using country.flag_url
+    # Query the country from the database using SQLAlchemy
+    comps = Competitions.query.filter_by(country=country_name).all()
+    if comps:
+        # You can access the country's flag_url using country.flag_url
 
-            results = [{'comp_name': c.name, 'logo_url': c.logo,
-                        'comp_id': c.compid} for c in comps]
-            # Returns results as a json so that I can use it in js
-            return jsonify(results)
-        else:
-            return jsonify({'message': 'comps not found'})
+        results = [{'comp_name': c.name, 'logo_url': c.logo,
+                    'comp_id': c.compid} for c in comps]
+        # Returns results as a json so that I can use it in js
+        return jsonify(results)
+    else:
+        return jsonify({'message': 'comps not found'})
 
-    except Exception as e:
-        return jsonify({'error': str(e)})
 
 # Used to pass information to the website using python functions such as API(statsbombpy), matplot graphs and sqlalch
 # Used to find all the teams in a single league
@@ -443,6 +427,8 @@ def store_favteam():
 
 # Returns the competition id and season id to the javascript and html website
 @app.route('/get_comp_id&seasonid', methods=['POST'])
+@utils.return_exception_as_json
+@utils.log_exception
 def get_comp_id_seasonid():
     # Uses the selected competiton name and competition year
     data = request.get_json()
