@@ -1,27 +1,43 @@
-from positiondict import my_dictionary as dct
-from mplsoccer import Pitch, VerticalPitch
-from flask import render_template, url_for, flash, redirect, request, jsonify, send_file, Flask
+# built-ins
+import base64
+import http.client
+import io
+import json
+
+# project
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
 from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
+from positiondict import my_dictionary as dct
+
+# flask stuff
+from flask import render_template, url_for, flash, redirect, request, jsonify, send_file, Flask
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy import text
-import http.client
-import json
-from statsbombpy import sb
-import pandas as pd
-import matplotlib.pyplot as plt
-import io
-import base64
-import seaborn as sns
-from scipy.ndimage import gaussian_filter
-import matplotlib
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 
+# database stuff
+from sqlalchemy import text
+
+# soccer API stuff
+from mplsoccer import Pitch, VerticalPitch
+from statsbombpy import sb
+
+# dataframe/visualization stuff
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.ndimage import gaussian_filter
+import matplotlib
+
+
 connt = http.client.HTTPSConnection("v3.football.api-sports.io")
+
+
+
+"""Business logic"""
 
 
 # Generates the heatMapmodel using the matchid and playerid
@@ -65,6 +81,7 @@ def heatMapmodel(id,player):
     except Exception as e:
         raise e
 
+
 # Fetches the team badge if it is not in the database table then it will call an api for the badge and stores it
 def logoChecker(teamName):
     try:
@@ -102,6 +119,7 @@ def logoChecker(teamName):
             return team.team_logo_url
     except Exception as e:
         raise e
+
 
 # Takes the matchid and the dataframe and generates and returns the starting formation of the match
 
@@ -179,6 +197,7 @@ def formationplot(id,df):
     except Exception as e:
         raise e
 
+
 # Takes the matchid and the team name. It will use the team and generate a passing network model
 def passingNetworkmodel(id,team):
     try:
@@ -232,6 +251,8 @@ def passingNetworkmodel(id,team):
         return img_stream
     except Exception as e:
         raise e
+
+
 # Takes the matchid and the team name. Generates the passing map of the whole team
 def passmapmodelteam(id,team):
     try:
@@ -269,6 +290,7 @@ def passmapmodelteam(id,team):
         return img_stream
     except Exception as e:
         raise e
+
 
 # Takes the id, home and away team. Returns the scores and includes own goals
 def get_scorers(id,home_team,away_team):
@@ -350,6 +372,7 @@ def passmapmodelplayer(id,player):
     except Exception as e:
         raise e
 
+
 def getPlayerNames(id,team):
     try:
         df = sb.events(match_id=id)
@@ -361,109 +384,8 @@ def getPlayerNames(id,team):
     except Exception as e:
         raise e
 
-@app.route("/")
-# Opens the home page route and requires the user to be logged in
-@app.route("/home")
-@login_required
-def home():
-    fav_team = current_user.favourite_team
-    # Queries the datbase for the Team table where the team name equals the favourite team
-    teamid = Teams.query.filter_by(team_name=fav_team).first()
-    # Queries the database in the Player table where teamid equals the id of the user's favourite team
-    player = Players.query.filter_by(teamid=teamid.teamid).all()
-    # If the queries is successful, it will pass and then gets uploaded to the website
-    if player:
-        pass
-    else:
-        # If the queries is not successful the program will query the API and store the players in the user's favourite team into the players table
-        payload = {}
-        headers = {
-            'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
-            'x-rapidapi-host': 'v3.football.api-sports.io',
-            'season': 2023
-        }
-        connt.request("GET", f"/players/squads?team={teamid.teamid}", headers=headers)
-        res = connt.getresponse()
-        data = res.read()
-        data = json.loads(data.decode('utf-8'))
-        for i in range(len(data['response'][0]['players'])):
-            playerid = data['response'][0]['players'][i]['id']
-            player_name = data['response'][0]['players'][i]['name']
-            player_number = data['response'][0]['players'][i]['number']
-            player_position = data['response'][0]['players'][i]['position']
-            player_image = data['response'][0]['players'][i]['photo']
-            
-            player = Players(playerid=playerid,player_name=player_name,player_number=player_number,player_position=player_position,player_image=player_image,teamid=teamid.teamid)
-            db.session.add(player)
-            # Commits it to the database
-            db.session.commit()
-        # Does the query again
-        player = Players.query.filter_by(teamid=teamid.teamid).all()
-    # Converts it to a python dictionary/json and with the for loop it allows me to do it for all the players in a team
-    playerArray = [{'name': p.player_name, 'image': p.player_image,'position': p.player_position, 'number': p.player_number} for p in player]
-    # Information is stored and passed to the website to display the information
-    teamaddress = teamid.stadium_name +" "+ teamid.stadium_address
-    leagueid = teamid.compid
-    stadium_image = teamid.stadium_image
-    team_badge = teamid.team_logo_url
-    stadium_name = teamid.stadium_name
-    return render_template('home.html',teamaddress=teamaddress,leagueid=leagueid,stadium_image=stadium_image,team_badge=team_badge,playerArray=playerArray,stadium_name=stadium_name)
 
-# Directs the user to the register page. If a route has @login_require, it will redirect them to the register or login page
-@app.route("/register", methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(
-            form.password.data).decode('utf-8')
-        user = User(username=form.username.data,
-                    email=form.email.data, password=hashed_password)
-        db.session.add(user)
-        db.session.commit()
-        flash('Your Account has been created! You are now able to log in', 'success')
-        return redirect(url_for('favteam'))
-    return render_template('register.html', title='Register', form=form)
-
-# Directs the user to the login page. If a route has @login_require, it will redirect them to the register or login page
-@app.route("/login", methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
-    form = LoginForm()
-    #Queries the sql database to check if the user exists 
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        # Checks the password using the hash and compares it to the password hash in the database if it matches then the user is logged in
-        if user and bcrypt.check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data)
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('home'))
-        else:
-            flash('Login Unsuccessful. Please check email and password', 'danger')
-    return render_template('login.html', title='Login', form=form)
-
-
-@app.route("/logout")
-def logout():
-    logout_user()
-    return redirect(url_for('home'))
-
-
-@app.route("/account")
-@login_required
-def account():
-    return render_template('account.html', title='Account')
-
-
-@app.route("/favteam")
-@login_required
-def favteam():
-    # Queries the SQL database to get all countries supported by the API
-    data = Countries.query.all()
-    return render_template('favteam.html', data=data)
-
+"""API routes"""
 
 @app.route('/query_country', methods=['POST'])
 def query_country():
@@ -555,18 +477,6 @@ def store_favteam():
     # No information is required to be set
     return jsonify({})
 
-# Shows the competitions and matches that the api have match data allowing the user to pick what match they want to know
-@app.route('/stats')
-def stats():
-    # Uses the statbombspy api to gather all the competition it has data on
-    comps = sb.competitions()
-    comp_season_data = []
-    for index, row in comps.iterrows():
-        # Data is placed inside a button in the stats.html
-        comp_season_data.append((row['competition_name'], row['season_name']))
-
-    return render_template('stats.html', data=comp_season_data)
-
 # Returns the competition id and season id to the javascript and html website
 @app.route('/get_comp_id&seasonid', methods=['POST'])
 def get_comp_id_seasonid():
@@ -580,6 +490,7 @@ def get_comp_id_seasonid():
     # Creates a json
     results = [{'compId': match.competition_id, 'seasonId': match.season_id}]
     return jsonify(results)
+
 
 # Queries the database and get the information about the match selected by the user
 @app.route('/get_selected_comp', methods=['POST'])
@@ -605,6 +516,7 @@ def get_selected_comp():
     matches_json = df.to_json(orient='records')
     matches_json = json.loads(matches_json)
     return jsonify(matches_json)
+
 
 # Used to get the match data
 @app.route('/get_match_stats', methods=['POST'])
@@ -641,6 +553,168 @@ def get_match_stats():
     Gmatches_dataframe = df
     return jsonify({})
 
+
+# Returns an images of the passmap of the team
+@app.route('/get_passmapteam', methods=['POST'])
+def get_passmap():
+    data = request.get_json()
+    team = data['team'] 
+    passmap = passmapmodelteam(gMATCH_ID,team)
+    passmap = base64.b64encode(passmap.read()).decode('utf-8')
+    return jsonify({"image_data": passmap})
+
+
+# Returns an images of the passmap for a specific player
+@app.route('/get_passmapplayer', methods=['POST'])
+def get_passmapplayer():
+    data = request.get_json()
+    player = data['player'] 
+    passmap = passmapmodelplayer(gMATCH_ID,player)
+    passmap = base64.b64encode(passmap.read()).decode('utf-8')
+    return jsonify({"image_data": passmap})
+
+
+# Returns an image of the pass network of the given team
+@app.route('/get_passnetwork', methods=['POST'])
+def get_passnetwork():
+    data = request.get_json()
+    team = data['team'] 
+    passnetwork = passingNetworkmodel(gMATCH_ID,team)
+    passnetwork = base64.b64encode(passnetwork.read()).decode('utf-8')
+    return jsonify({"image_data": passnetwork})
+
+
+# Returns the heatmap for a specific player
+@app.route('/get_heatmap', methods=['POST'])
+def get_heatmap():
+    data = request.get_json()
+    player = data['player'] 
+    heatmap = heatMapmodel(gMATCH_ID,player)
+    heatmap = base64.b64encode(heatmap.read()).decode('utf-8')
+    return jsonify({"image_data": heatmap})
+
+
+"""Pages"""
+
+
+@app.route("/")
+# Opens the home page route and requires the user to be logged in
+@app.route("/home")
+@login_required
+def home():
+    fav_team = current_user.favourite_team
+    # Queries the datbase for the Team table where the team name equals the favourite team
+    teamid = Teams.query.filter_by(team_name=fav_team).first()
+    # Queries the database in the Player table where teamid equals the id of the user's favourite team
+    player = Players.query.filter_by(teamid=teamid.teamid).all()
+    # If the queries is successful, it will pass and then gets uploaded to the website
+    if player:
+        pass
+    else:
+        # If the queries is not successful the program will query the API and store the players in the user's favourite team into the players table
+        payload = {}
+        headers = {
+            'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
+            'x-rapidapi-host': 'v3.football.api-sports.io',
+            'season': 2023
+        }
+        connt.request("GET", f"/players/squads?team={teamid.teamid}", headers=headers)
+        res = connt.getresponse()
+        data = res.read()
+        data = json.loads(data.decode('utf-8'))
+        for i in range(len(data['response'][0]['players'])):
+            playerid = data['response'][0]['players'][i]['id']
+            player_name = data['response'][0]['players'][i]['name']
+            player_number = data['response'][0]['players'][i]['number']
+            player_position = data['response'][0]['players'][i]['position']
+            player_image = data['response'][0]['players'][i]['photo']
+            
+            player = Players(playerid=playerid,player_name=player_name,player_number=player_number,player_position=player_position,player_image=player_image,teamid=teamid.teamid)
+            db.session.add(player)
+            # Commits it to the database
+            db.session.commit()
+        # Does the query again
+        player = Players.query.filter_by(teamid=teamid.teamid).all()
+    # Converts it to a python dictionary/json and with the for loop it allows me to do it for all the players in a team
+    playerArray = [{'name': p.player_name, 'image': p.player_image,'position': p.player_position, 'number': p.player_number} for p in player]
+    # Information is stored and passed to the website to display the information
+    teamaddress = teamid.stadium_name +" "+ teamid.stadium_address
+    leagueid = teamid.compid
+    stadium_image = teamid.stadium_image
+    team_badge = teamid.team_logo_url
+    stadium_name = teamid.stadium_name
+    return render_template('home.html',teamaddress=teamaddress,leagueid=leagueid,stadium_image=stadium_image,team_badge=team_badge,playerArray=playerArray,stadium_name=stadium_name)
+
+
+# Directs the user to the register page. If a route has @login_require, it will redirect them to the register or login page
+@app.route("/register", methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(
+            form.password.data).decode('utf-8')
+        user = User(username=form.username.data,
+                    email=form.email.data, password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Your Account has been created! You are now able to log in', 'success')
+        return redirect(url_for('favteam'))
+    return render_template('register.html', title='Register', form=form)
+
+# Directs the user to the login page. If a route has @login_require, it will redirect them to the register or login page
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = LoginForm()
+    #Queries the sql database to check if the user exists 
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        # Checks the password using the hash and compares it to the password hash in the database if it matches then the user is logged in
+        if user and bcrypt.check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('home'))
+        else:
+            flash('Login Unsuccessful. Please check email and password', 'danger')
+    return render_template('login.html', title='Login', form=form)
+
+
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+
+@app.route("/account")
+@login_required
+def account():
+    return render_template('account.html', title='Account')
+
+
+@app.route("/favteam")
+@login_required
+def favteam():
+    # Queries the SQL database to get all countries supported by the API
+    data = Countries.query.all()
+    return render_template('favteam.html', data=data)
+
+
+# Shows the competitions and matches that the api have match data allowing the user to pick what match they want to know
+@app.route('/stats')
+def stats():
+    # Uses the statbombspy api to gather all the competition it has data on
+    comps = sb.competitions()
+    comp_season_data = []
+    for index, row in comps.iterrows():
+        # Data is placed inside a button in the stats.html
+        comp_season_data.append((row['competition_name'], row['season_name']))
+
+    return render_template('stats.html', data=comp_season_data)
+
+
 # The webpage that displays the match stats
 @app.route('/matchstats')
 def matchstats():
@@ -658,40 +732,3 @@ def matchstats():
     img_stream = formationplot(gMATCH_ID,Gmatches_dataframe)
     img_data = base64.b64encode(img_stream.read()).decode('utf-8')
     return render_template('matchstats.html', img_data=img_data,score=score, gHome_Team=gHome_Team, gAway_Team=gAway_Team, gMATCH_ID=gMATCH_ID,team1_logo=team1_logo,team2_logo=team2_logo,homegoals=homegoals,awaygoals=awaygoals,home_players=home_players,away_players=away_players)
-
-# Returns an images of the passmap of the team
-@app.route('/get_passmapteam', methods=['POST'])
-def get_passmap():
-    data = request.get_json()
-    team = data['team'] 
-    passmap = passmapmodelteam(gMATCH_ID,team)
-    passmap = base64.b64encode(passmap.read()).decode('utf-8')
-    return jsonify({"image_data": passmap})
-
-# Returns an images of the passmap for a specific player
-@app.route('/get_passmapplayer', methods=['POST'])
-def get_passmapplayer():
-    data = request.get_json()
-    player = data['player'] 
-    passmap = passmapmodelplayer(gMATCH_ID,player)
-    passmap = base64.b64encode(passmap.read()).decode('utf-8')
-    return jsonify({"image_data": passmap})
-
-# Returns an image of the pass network of the given team
-@app.route('/get_passnetwork', methods=['POST'])
-def get_passnetwork():
-    data = request.get_json()
-    team = data['team'] 
-    passnetwork = passingNetworkmodel(gMATCH_ID,team)
-    passnetwork = base64.b64encode(passnetwork.read()).decode('utf-8')
-    return jsonify({"image_data": passnetwork})
-
-# Returns the heatmap for a specific player
-@app.route('/get_heatmap', methods=['POST'])
-def get_heatmap():
-    data = request.get_json()
-    player = data['player'] 
-    heatmap = heatMapmodel(gMATCH_ID,player)
-    heatmap = base64.b64encode(heatmap.read()).decode('utf-8')
-    return jsonify({"image_data": heatmap})
-
