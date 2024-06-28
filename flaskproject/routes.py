@@ -1,13 +1,12 @@
 # built-ins
 import base64
-import http.client
 import io
 import json
 
 # project
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
-from flaskproject.logic import statslib
+from flaskproject.logic import leaguelib, statslib
 from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
 from positiondict import my_dictionary as dct
 
@@ -21,10 +20,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 import matplotlib
-
-
-connt = http.client.HTTPSConnection("v3.football.api-sports.io")
-
 
 
 """Business logic"""
@@ -83,23 +78,12 @@ def logoChecker(teamName):
             return team_backup.team_logo_url
         # Fetches from the API since it is not in the database
         else:
-            payload = {}
-            headers = {
-                'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
-                'x-rapidapi-host': 'v3.football.api-sports.io',
-                'season': 2023
-            }
-
-            # If there is a space, the spae is replaced with %20 as thats what the api uses instead of spaces
-            connt.request("GET", f"/teams?name={teamName.replace(' ', '%20')}", headers=headers)
-            res = connt.getresponse()
-            data = res.read()
-            data = json.loads(data.decode('utf-8'))
+            team = leaguelib.get_team(teamName)
             # After the API Call, I have to assign each part to a variable
-            teamid = data['response'][0]["team"]["id"]
-            team_name = data["response"][0]["team"]["name"]
-            country = data["response"][0]["team"]["country"]
-            team_logo_url = data['response'][0]['team']['logo']
+            teamid = team["id"]
+            team_name = team["name"]
+            country = team["country"]
+            team_logo_url = team['logo']
             # Links it to the corresposing value and then it commits it to the database table called TeamsLogo
             team = TeamsLogo(teamid=teamid, team_name=team_name,
                             country=country, team_logo_url=team_logo_url)
@@ -419,28 +403,18 @@ def query_teams():
                     'comp_id': t.compid, 'team_name': t.team_name} for t in team]
         return jsonify(results)
     else:
-        payload = {}
-        headers = {
-            'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
-            'x-rapidapi-host': 'v3.football.api-sports.io',
-            'season': 2023
-        }
-        connt.request(
-            "GET", f"/teams?league={leagueid}&season=2023", headers=headers)
-        res = connt.getresponse()
-        data = res.read()
-        data = json.loads(data.decode('utf-8'))
+        teams = leaguelib.get_teams_for_league(leagueid)
         # This for loop goes through every team in the league and assigns variables to each piece of data
-        for x in range(len(data['response'])):
-            teamid = data['response'][x]["team"]["id"]
-            team_name = data["response"][x]["team"]["name"]
-            country = data["response"][x]["team"]["country"]
-            team_logo_url = data['response'][x]['team']['logo']
-            stadium_id = data['response'][x]['venue']['id']
-            stadium_name = data['response'][x]['venue']['name']
-            stadium_capacity = data['response'][x]['venue']['capacity']
-            stadium_address = data['response'][x]['venue']['address']
-            stadium_image = data['response'][x]['venue']['image']
+        for team in teams:
+            teamid = team["team"]["id"]
+            team_name = team["team"]["name"]
+            country = team["team"]["country"]
+            team_logo_url = team['team']['logo']
+            stadium_id = team['venue']['id']
+            stadium_name = team['venue']['name']
+            stadium_capacity = team['venue']['capacity']
+            stadium_address = team['venue']['address']
+            stadium_image = team['venue']['image']
             # Creates a team variable that holds all the information for a single team
             team = Teams(teamid=teamid, team_name=team_name, country=country, team_logo_url=team_logo_url, stadium_id=stadium_id,
                          stadium_name=stadium_name, stadium_capacity=stadium_capacity, stadium_image=stadium_image,stadium_address=stadium_address,compid=leagueid)
@@ -602,22 +576,13 @@ def home():
         pass
     else:
         # If the queries is not successful the program will query the API and store the players in the user's favourite team into the players table
-        payload = {}
-        headers = {
-            'x-rapidapi-key': '46e3603952bbef534e2356d69f0a1ed6',
-            'x-rapidapi-host': 'v3.football.api-sports.io',
-            'season': 2023
-        }
-        connt.request("GET", f"/players/squads?team={teamid.teamid}", headers=headers)
-        res = connt.getresponse()
-        data = res.read()
-        data = json.loads(data.decode('utf-8'))
-        for i in range(len(data['response'][0]['players'])):
-            playerid = data['response'][0]['players'][i]['id']
-            player_name = data['response'][0]['players'][i]['name']
-            player_number = data['response'][0]['players'][i]['number']
-            player_position = data['response'][0]['players'][i]['position']
-            player_image = data['response'][0]['players'][i]['photo']
+        players = leaguelib.get_players_for_team(teamid.teamid)
+        for player_info in players:
+            playerid = player_info['id']
+            player_name = player_info['name']
+            player_number = player_info['number']
+            player_position = player_info['position']
+            player_image = player_info['photo']
             
             player = Players(playerid=playerid,player_name=player_name,player_number=player_number,player_position=player_position,player_image=player_image,teamid=teamid.teamid)
             db.session.add(player)
