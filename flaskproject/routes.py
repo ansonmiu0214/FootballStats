@@ -11,24 +11,16 @@ from flaskproject.models import User, Countries, Competitions, Teams, Comps, Tea
 from positiondict import my_dictionary as dct
 
 # flask stuff
-from flask import render_template, url_for, flash, redirect, request, jsonify, send_file, Flask
+from flask import render_template, url_for, flash, redirect, request, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
-
-# database stuff
-from sqlalchemy import text
 
 # soccer API stuff
-from mplsoccer import Pitch, VerticalPitch
+from mplsoccer import Pitch
 from statsbombpy import sb
 
 # dataframe/visualization stuff
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.ndimage import gaussian_filter
 import matplotlib
 
