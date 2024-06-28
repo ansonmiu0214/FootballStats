@@ -7,6 +7,7 @@ import json
 # project
 from flaskproject import app, db, bcrypt
 from flaskproject.forms import RegistrationForm, LoginForm
+from flaskproject.logic import statslib
 from flaskproject.models import User, Countries, Competitions, Teams, Comps, TeamsLogo, Players
 from positiondict import my_dictionary as dct
 
@@ -14,11 +15,8 @@ from positiondict import my_dictionary as dct
 from flask import render_template, url_for, flash, redirect, request, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 
-# soccer API stuff
-from mplsoccer import Pitch
-from statsbombpy import sb
-
 # dataframe/visualization stuff
+from mplsoccer import Pitch
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
@@ -35,7 +33,7 @@ connt = http.client.HTTPSConnection("v3.football.api-sports.io")
 # Generates the heatMapmodel using the matchid and playerid
 def heatMapmodel(id,player):
     try:
-        match_event_df = sb.events(match_id=id)
+        match_event_df = statslib.get_events_df(match_id=id)
         data1 = (match_event_df)
         data1 = data1[(data1['player'] == player) & (
             data1['type'] == 'Pass')].reset_index(drop=True)
@@ -117,7 +115,7 @@ def logoChecker(teamName):
 
 def formationplot(id,df):
     try:
-        df = sb.events(match_id=id)
+        df = statslib.get_events_df(match_id=id)
         home_position_id = []
         away_position_id = []
 
@@ -193,8 +191,8 @@ def formationplot(id,df):
 # Takes the matchid and the team name. It will use the team and generate a passing network model
 def passingNetworkmodel(id,team):
     try:
-        df = sb.events(match_id=id)
-        match_event_df = sb.events(match_id=id)
+        df = statslib.get_events_df(match_id=id)
+        match_event_df = statslib.get_events_df(match_id=id)
         df = df[(df['type'] == 'Pass')].reset_index(drop=True)
         starter_id = []
         for x in range(2):
@@ -249,7 +247,7 @@ def passingNetworkmodel(id,team):
 def passmapmodelteam(id,team):
     try:
         
-        data1 = sb.events(match_id=id)
+        data1 = statslib.get_events_df(match_id=id)
         data1 = data1[(data1['team'] == team) & (
             data1['type'] == 'Pass')].reset_index(drop=True)
         data1[['x_start', 'y_start']] = pd.DataFrame(
@@ -286,7 +284,7 @@ def passmapmodelteam(id,team):
 
 # Takes the id, home and away team. Returns the scores and includes own goals
 def get_scorers(id,home_team,away_team):
-    df = sb.events(match_id=id)
+    df = statslib.get_events_df(match_id=id)
     HomeGoals = []
     AwayGoals = []
     HomeScorer = df[(df['shot_outcome'] == 'Goal') & (df['type'] == 'Shot') & (df['team']== home_team)].reset_index(drop=True)
@@ -330,7 +328,7 @@ def get_scorers(id,home_team,away_team):
     
 def passmapmodelplayer(id,player):
     try:
-        data1 = sb.events(match_id=id)
+        data1 = statslib.get_events_df(match_id=id)
         data1 = data1[(data1['player'] == player) & (
             data1['type'] == 'Pass')].reset_index(drop=True)
         data1[['x_start', 'y_start']] = pd.DataFrame(
@@ -367,7 +365,7 @@ def passmapmodelplayer(id,player):
 
 def getPlayerNames(id,team):
     try:
-        df = sb.events(match_id=id)
+        df = statslib.get_events_df(match_id=id)
         player_info_df = df.loc[df['team'] == team, ['player_id', 'player', 'team']]
         player_info_df = player_info_df.drop_duplicates().reset_index(drop=True)
         player_info_df = player_info_df.dropna(subset=['player'])
@@ -495,7 +493,7 @@ def get_selected_comp():
     df = pd.read_sql_query(query, conn)
     # If its empty it stores it in the database
     if df.empty:
-        matches = (sb.matches(competition_id=compId, season_id=seasonId))
+        matches = (statslib.get_matches_df(competition_id=compId, season_id=seasonId))
         matches = matches.assign(compId=compId, seasonId=seasonId)
         matches.to_sql('matches', conn, if_exists='append', index=False)
         query = f'SELECT * FROM matches WHERE compId={compId} AND seasonId ={seasonId}'
@@ -529,7 +527,7 @@ def get_match_stats():
     query = f'SELECT * FROM gamestats WHERE match_id={gMATCH_ID}'
     df = pd.read_sql_query(query, conn)
     if df.empty:
-        matches = (sb.events(match_id=gMATCH_ID))
+        matches = (statslib.get_events_df(match_id=gMATCH_ID))
         matches = matches.assign(match_id=gMATCH_ID)
         matches = matches[['player_id', 'player', 'type', 'location', 'pass_outcome',
                            'pass_recipient', 'team', 'tactics', 'pass_type', 'match_id', 'shot_outcome']]
@@ -698,7 +696,7 @@ def favteam():
 @app.route('/stats')
 def stats():
     # Uses the statbombspy api to gather all the competition it has data on
-    comps = sb.competitions()
+    comps = statslib.get_competitions_df()
     comp_season_data = []
     for index, row in comps.iterrows():
         # Data is placed inside a button in the stats.html
